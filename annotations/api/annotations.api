@@ -1,0 +1,4 @@
+public abstract interface annotation class com/fueledbycaffeine/autoservice/AutoService : java/lang/annotation/Annotation {
+	public abstract fun value ()[Ljava/lang/Class;
+}
+

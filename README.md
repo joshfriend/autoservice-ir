@@ -1,0 +1,271 @@
+# AutoService IR
+
+A Kotlin compiler plugin implementation of Google's AutoService annotation processor. This plugin generates `META-INF/services` files at compile time using Kotlin's FIR and IR backends, providing better performance and full K2 compiler support.
+
+## Features
+- **Works with existing code**: Compatible with the `@AutoService` annotation from [Google's AutoService library][google-auto-service]
+- **Smart type inference**: Automatically infers service type when a class has only one supertype
+- **K2 Compiler Support**: Fully compatible with Kotlin 2.0+ (K2 compiler) using both FIR and IR
+- **FIR and IR-based**: Leverages Kotlin's modern compiler plugin infrastructure which is faster than KSP/Kapt
+- **Drop-in replacement**: Can replace KSP or KAPT-based AutoService processing
+
+## Installation
+Add the AutoService Gradle plugin to your build configuration:
+
+**build.gradle(.kts):**
+```kotlin
+plugins {
+    kotlin("jvm") version "2.3.0"
+    id("com.fueledbycaffeine.autoservice") version "<latest>"
+}
+```
+
+## Usage
+The AutoService plugin automatically processes classes annotated with `@AutoService` during compilation, generating the necessary `META-INF/services` files for Java's ServiceLoader mechanism.
+
+### Basic Usage - Inferred Type
+```kotlin
+package com.example
+
+import com.fueledbycaffeine.autoservice.AutoService
+
+// Define your service interface
+interface Logger {
+    fun log(message: String)
+}
+
+// Just use @AutoService - the type is automatically inferred!
+@AutoService
+class ConsoleLogger : Logger {
+    override fun log(message: String) {
+        println(message)
+    }
+}
+```
+
+**What this generates:**
+
+File: `build/classes/kotlin/main/META-INF/services/com.example.Logger`
+```
+com.example.ConsoleLogger
+```
+
+### Type Inference Details
+When using `com.fueledbycaffeine.autoservice.AutoService`, the service type is automatically inferred when your class has **exactly one supertype** (besides `Any`):
+
+**When inference works:**
+- ✅ Class implements exactly one interface
+  ```kotlin
+  @AutoService  // MyInterface inferred
+  class MyImpl : MyInterface { }
+  ```
+- ✅ Class extends exactly one abstract/concrete class
+  ```kotlin
+  @AutoService  // AbstractService inferred
+  class ConcreteService : AbstractService() { }
+  ```
+- ❌ Class has multiple supertypes (must specify explicitly)
+  ```kotlin
+  @AutoService(InterfaceA::class, InterfaceB::class)  // Must be explicit
+  class Multi : InterfaceA, InterfaceB { }
+  ```
+- ❌ Class has no supertypes (must specify explicitly)
+  ```kotlin
+  @AutoService(SomeInterface::class)  // Must be explicit
+  class Standalone : SomeInterface { }
+  ```
+
+### With Explicit Service Type
+If you prefer or need to be explicit:
+
+```kotlin
+import com.fueledbycaffeine.autoservice.AutoService
+
+@AutoService(Logger::class)  // Explicitly specify the service type
+class FileLogger : Logger {
+    override fun log(message: String) {
+        File("app.log").appendText("$message\n")
+    }
+}
+```
+
+**Loading services at runtime:**
+```kotlin
+// Automatically discovers all Logger implementations
+val loggers = ServiceLoader.load(Logger::class.java)
+loggers.forEach { logger ->
+    logger.log("Hello from ${logger.javaClass.simpleName}")
+}
+```
+
+### Using Google's Annotation (Compatibility Mode)
+For existing codebases or compatibility with other tools:
+
+```kotlin
+import com.google.auto.service.AutoService
+
+// Add the dependency in build.gradle(.kts):
+// implementation("com.google.auto.service:auto-service-annotations:1.1.1")
+
+@AutoService(Logger::class)  // Google's annotation requires explicit type
+class FileLogger : Logger {
+    override fun log(message: String) {
+        File("app.log").appendText("$message\n")
+    }
+}
+```
+
+### Multiple Service Interfaces
+Register a single implementation for multiple service types:
+
+```kotlin
+interface Logger {
+    fun log(message: String)
+}
+
+interface Formatter {
+    fun format(data: Map<String, Any>): String
+}
+
+@AutoService(Logger::class, Formatter::class)
+class JsonLogger : Logger, Formatter {
+    override fun log(message: String) {
+        println(message)
+    }
+    
+    override fun format(data: Map<String, Any>): String {
+        // Format as JSON
+        return data.entries.joinToString(",", "{", "}") { 
+            """"${it.key}":"${it.value}""""
+        }
+    }
+}
+```
+
+**Generates two service files:**
+- `META-INF/services/com.example.Logger` → `com.example.JsonLogger`
+- `META-INF/services/com.example.Formatter` → `com.example.JsonLogger`
+
+### Multiple Implementations
+
+You can have multiple implementations of the same service:
+
+```kotlin
+interface Logger {
+    fun log(message: String)
+}
+
+@AutoService(Logger::class)
+class ConsoleLogger : Logger {
+    override fun log(message: String) = println(message)
+}
+
+@AutoService(Logger::class)
+class FileLogger : Logger {
+    override fun log(message: String) {
+        File("app.log").appendText("$message\n")
+    }
+}
+
+@AutoService(Logger::class)
+class NetworkLogger : Logger {
+    override fun log(message: String) {
+        // Send to logging service
+    }
+}
+```
+
+**Generates one service file:**
+
+`META-INF/services/com.example.Logger`:
+```
+com.example.ConsoleLogger
+com.example.FileLogger
+com.example.NetworkLogger
+```
+
+## Migration Guide
+Replace the KSP/KAPT plugin with this plugin:
+
+```kotlin
+plugins {
+    kotlin("jvm")
+    id("com.fueledbycaffeine.autoservice") version "<latest>"
+    // Remove: id("com.google.devtools.ksp") or kotlin("kapt")
+}
+
+dependencies {
+    // Remove KSP/KAPT processor dependencies:
+    // ksp("dev.zacsweers.autoservice:auto-service-ksp:<version>")  // Remove this
+    // kapt("com.google.auto.service:auto-service:<version>")       // Remove this
+    
+    // Option 1: Keep Google's annotation (no code changes)
+    implementation("com.google.auto.service:auto-service-annotations:<version>")
+    
+    // Option 2: Use our annotation for type inference (change imports)
+    // No dependency needed!
+}
+```
+
+**Benefits:** Faster compilation, better incremental compilation, type inference, native K2 support
+
+## How It Works
+1. **FIR Phase**: During frontend compilation, the plugin:
+   - Generates synthetic "mirror" declarations for incremental compilation tracking
+   - Validates @AutoService usage with real-time IDE error checking (abstract classes, visibility, etc.)
+2. **Type Inference**: If no service type is specified and the class has exactly one non-Any supertype, it's used automatically
+3. **Validation**: During IR phase, verifies that annotated classes actually implement their declared service interfaces
+4. **IR Phase**: During backend compilation, the plugin generates the service registry
+5. **File Generation**: Creates `META-INF/services/<service-interface>` files in the output directory
+   - **Merges** with existing service files from previous compilations (incremental compilation support)
+   - Validates and removes entries for deleted or modified classes
+   - Maintains sorted entries for consistency
+6. **Service Loading**: At runtime, `java.util.ServiceLoader` can discover these implementations
+
+## Annotation Comparison
+### Our Annotation vs Google's Annotation
+| Annotation      | `com.fueledbycaffeine.autoservice.AutoService` | `com.google.auto.service.AutoService` |
+|-----------------|-----------------------------------------------|--------------------------------------|
+| Type Inference  | ✅ Yes (optional parameter) | ❌ No (parameter required) |
+| Dependencies    | None (provided by plugin) | Requires `auto-service-annotations` |
+| Kotlin-friendly | ✅ Yes (`vararg KClass`) | ⚠️ Java-based (`Class<?>[]`) |
+
+## Comparison with Alternative Processors
+| Feature                      | AutoService FIR/IR | [KSP AutoService][auto-service-ksp] | [KAPT AutoService][google-auto-service] |
+|------------------------------|--------------------|-------------------------------------|-----------------------------------------|
+| K2 Support                   | ✅ Yes (Native)     | ✅ Yes                               | ❌ No                                    |
+| Type Inference               | ✅ Yes              | ❌ No                                | ❌ No                                    |
+| Service file merging         | ✅ Yes              | ❌ No                                | ✅ Yes                                   |
+| Incremental compilation      | ✅ Full support     | ⚠️ Isolating only                   | ⚠️ Aggregating only                     |
+| Real-time IDE error checking | ✅ Yes (FIR)        | ❌ Build required                    | ❌ Build required                        |
+| Compilation Speed            | 🚀 Fastest         | ⚡ Faster                            | 🐌 Slow                                 |
+| Setup Complexity             | ✅ Simple           | ⚠️ Medium                           | ⚠️ Medium                               |
+
+
+## Debugging
+The plugin can be configured to emit debugging information via the `autoService` extension in your build file:
+
+```kotlin
+autoService {
+    debug(true)
+}
+```
+
+When you compile, you'll see output like:
+```
+AutoService IR: Processing @AutoService on class: com.example.MyServiceImpl
+AutoService IR: Inferred service interface MyService for com.example.MyServiceImpl
+AutoService IR: Registering service: com.example.MyService -> com.example.MyServiceImpl
+AutoService: Creating service files in /path/to/build/classes/kotlin/main/META-INF/services
+```
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+Inspired by [@ZacSweers][zac] [auto-service-ksp][auto-service-ksp] implementation of AutoService, and [Metro][metro] compiler plugin patterns. He figured out all the hard bits of incremental compilation with Metro and showed me how to do it.
+
+[google-auto-service]: https://github.com/google/auto/tree/main/service
+[auto-service-ksp]: https://github.com/ZacSweers/auto-service-ksp
+[metro]: https://github.com/ZacSweers/Metro
+[zac]: https://github.com/ZacSweers
