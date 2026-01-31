@@ -2,7 +2,7 @@ name: "Publish"
 
 on:
   workflow_run:
-    workflows: ["Test and Check", "Functional Tests"]
+    workflows: ["Test"]
     types: [completed]
     branches: [main]
 
