@@ -5,7 +5,7 @@ jvmTarget = "17"
 kotlin = "2.3.0"
 kotlinCompileTesting = "0.12.1"
 moshi = "1.15.2"
-testkitLibs = "0.18"
+testkitLibs = "0.22"
 
 [libraries]
 # Google's AutoService (optional - for compatibility only)
