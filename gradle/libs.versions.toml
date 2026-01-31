@@ -1,11 +1,14 @@
 [versions]
 autoService = "1.1.1"
+binaryCompatibilityValidator = "0.17.0"
 jdk = "21"
 jvmTarget = "17"
 kotlin = "2.3.0"
 kotlinCompileTesting = "0.12.1"
+mavenPublish = "0.36.0"
 moshi = "1.15.2"
 testkitLibs = "0.22"
+testkitPlugin = "0.17"
 
 [libraries]
 # Google's AutoService (optional - for compatibility only)
@@ -28,5 +31,11 @@ truth = { module = "com.google.truth:truth", version = "1.4.5" }
 kotlinCompileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kotlinCompileTesting" }
 autonomousapps-testkit-support = { module = "com.autonomousapps:gradle-testkit-support", version.ref = "testkitLibs" }
 autonomousapps-testkit-truth = { module = "com.autonomousapps:testkit-truth", version.ref = "testkitLibs" }
+autonomousapps-testkitPlugin = { module = "com.autonomousapps:gradle-testkit-plugin", version.ref = "testkitPlugin" }
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
+
+# Convention plugin dependencies
+kotlinx-binaryCompatibilityValidator = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
+vanniktech-mavenPublish = { module = "com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin", version.ref = "mavenPublish" }
+

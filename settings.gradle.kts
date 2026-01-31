@@ -1,11 +1,12 @@
 @file:Suppress("UnstableApiUsage")
 
 pluginManagement {
+  includeBuild("build-logic")
   plugins {
     id("com.gradle.plugin-publish") version "1.3.1"
     id("org.jetbrains.kotlin.jvm") version "2.3.0"
     id("com.autonomousapps.build-health") version "3.5.1"
-    id("com.autonomousapps.testkit") version "0.17"
+    id("com.autonomousapps.testkit") version "0.14"
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.17.0"
     id("com.github.gmazzo.buildconfig") version "6.0.7"
     id("com.vanniktech.maven.publish") version "0.36.0"

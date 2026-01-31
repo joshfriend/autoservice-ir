@@ -1,48 +1,48 @@
 package conventions
 
+import com.vanniktech.maven.publish.DeploymentValidation
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
-import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.configure
 
+@Suppress("unused")
 class PublishConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     with(target) {
-      pluginManager.apply(com.vanniktech.maven.publish.MavenPublishPlugin::class.java)
+      pluginManager.apply("com.vanniktech.maven.publish")
 
-      extensions.configure<MavenPublishBaseExtension> {
-        publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+      extensions.configure(MavenPublishBaseExtension::class.java) { publishing ->
+        publishing.publishToMavenCentral(true, DeploymentValidation.VALIDATED)
 
         if (providers.gradleProperty("signingInMemoryKey").isPresent) {
-          signAllPublications()
+          publishing.signAllPublications()
         }
 
-        pom {
-          description.set(providers.gradleProperty("POM_DESCRIPTION"))
-          inceptionYear.set(providers.gradleProperty("POM_INCEPTION_YEAR"))
-          url.set(providers.gradleProperty("POM_URL"))
+        publishing.pom { pom ->
+          pom.description.set("Kotlin compiler plugin implementation of Google's AutoService")
+          pom.inceptionYear.set("2026")
+          pom.url.set("https://github.com/joshfriend/autoservice-ir/")
 
-          licenses {
-            license {
-              name.set(providers.gradleProperty("POM_LICENSE_NAME"))
-              url.set(providers.gradleProperty("POM_LICENSE_URL"))
-              distribution.set(providers.gradleProperty("POM_LICENSE_DIST"))
+          pom.licenses { licensesSpec ->
+            licensesSpec.license { license ->
+              license.name.set("MIT License")
+              license.url.set("https://opensource.org/licenses/MIT")
+              license.distribution.set("repo")
             }
           }
 
-          developers {
-            developer {
-              id.set(providers.gradleProperty("POM_DEVELOPER_ID"))
-              name.set(providers.gradleProperty("POM_DEVELOPER_NAME"))
-              url.set(providers.gradleProperty("POM_DEVELOPER_URL"))
+          pom.developers { developersSpec ->
+            developersSpec.developer { developer ->
+              developer.id.set("joshfriend")
+              developer.name.set("Josh Friend")
+              developer.url.set("https://github.com/joshfriend/")
             }
           }
 
-          scm {
-            url.set(providers.gradleProperty("POM_SCM_URL"))
-            connection.set(providers.gradleProperty("POM_SCM_CONNECTION"))
-            developerConnection.set(providers.gradleProperty("POM_SCM_DEV_CONNECTION"))
+          pom.scm { scmSpec ->
+            scmSpec.url.set("https://github.com/joshfriend/autoservice-ir/")
+            scmSpec.connection.set("scm:git:git://github.com/joshfriend/autoservice-ir.git")
+            scmSpec.developerConnection.set("scm:git:ssh://git@github.com/joshfriend/autoservice-ir.git")
           }
         }
       }

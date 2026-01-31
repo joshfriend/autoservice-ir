@@ -1,58 +1,29 @@
 package conventions
 
-import com.autonomousapps.kit.GradleTestKitExtension
+import com.autonomousapps.GradleTestKitSupportExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.withType
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
+import org.gradle.plugin.devel.tasks.ValidatePlugins
 
+@Suppress("unused")
 class PluginConventionPlugin : Plugin<Project> {
-  override fun apply(target: Project) {
-    with(target) {
-      with(pluginManager) {
-        apply("java-gradle-plugin")
-        apply(org.jetbrains.kotlinx.binary_compatibility_validator.gradle.BinaryCompatibilityValidatorPlugin::class.java)
-        apply(org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper::class.java)
-        apply(com.autonomousapps.plugin.gradle.TestKitGradlePlugin::class.java)
-        apply(PublishConventionPlugin::class.java)
-      }
+  override fun apply(target: Project) = target.run {
+    pluginManager.apply(BasePlugin::class.java)
+    pluginManager.apply("java-gradle-plugin")
 
-      val libs = extensions.getByType<org.gradle.api.artifacts.VersionCatalogsExtension>().named("libs")
+    extensions.configure(GradleTestKitSupportExtension::class.java) { testkit ->
+      testkit.withSupportLibrary()
+      testkit.withTruthLibrary()
+    }
 
-      extensions.configure<KotlinProjectExtension> {
-        explicitApi()
-        compilerOptions {
-          jvmTarget.set(JvmTarget.fromTarget(libs.findVersion("jvmTarget").get().toString()))
-        }
-      }
+    tasks.withType(ValidatePlugins::class.java).configureEach { task ->
+      task.enableStricterValidation.set(true)
+    }
 
-      extensions.configure<JavaPluginExtension> {
-        toolchain {
-          languageVersion.set(JavaLanguageVersion.of(libs.findVersion("jdk").get().toString().toInt()))
-        }
-      }
-
-      tasks.withType<JavaCompile>().configureEach {
-        options.release.set(libs.findVersion("jvmTarget").get().toString().toInt())
-      }
-
-      extensions.configure<GradleTestKitExtension> {
-        withSupportLibrary()
-        withTruthLibrary()
-      }
-
-      tasks.withType<Test>().configureEach {
-        systemProperty("gradleVersion", System.getProperty("gradleVersion") ?: "")
-        useJUnitPlatform()
-      }
+    tasks.withType(Test::class.java).configureEach { task ->
+      task.systemProperty("gradleVersion", System.getProperty("gradleVersion") ?: "")
+      task.useJUnitPlatform()
     }
   }
 }

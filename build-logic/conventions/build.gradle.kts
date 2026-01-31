@@ -1,6 +1,10 @@
 plugins {
-  kotlin("jvm")
-  `java-gradle-plugin`
+  id("org.jetbrains.kotlin.jvm")
+  id("java-gradle-plugin")
+}
+
+kotlin {
+  jvmToolchain(21)
 }
 
 gradlePlugin {
@@ -21,8 +25,8 @@ gradlePlugin {
 }
 
 dependencies {
-  implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
-  implementation("org.jetbrains.kotlinx:binary-compatibility-validator:0.17.0")
-  implementation("com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.36.0")
-  implementation("com.autonomousapps:testkit-gradle-plugin:0.17")
+  implementation(libs.kotlin.gradlePlugin)
+  implementation(libs.kotlinx.binaryCompatibilityValidator)
+  implementation(libs.vanniktech.mavenPublish)
+  implementation(libs.autonomousapps.testkitPlugin)
 }
