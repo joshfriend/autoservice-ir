@@ -1,6 +1,13 @@
 public abstract class com/fueledbycaffeine/autoservice/gradle/AutoServiceExtension {
-	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public static final field Companion Lcom/fueledbycaffeine/autoservice/gradle/AutoServiceExtension$Companion;
+	public static final field NAME Ljava/lang/String;
+	public static final field PROPERTY_DEBUG Ljava/lang/String;
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
 	public final fun debug (Z)V
+}
+
+public final class com/fueledbycaffeine/autoservice/gradle/AutoServiceExtension$Companion {
+	public final fun create (Lorg/gradle/api/plugins/ExtensionContainer;)Lcom/fueledbycaffeine/autoservice/gradle/AutoServiceExtension;
 }
 
 public final class com/fueledbycaffeine/autoservice/gradle/AutoServiceGradlePlugin : org/jetbrains/kotlin/gradle/plugin/KotlinCompilerPluginSupportPlugin {

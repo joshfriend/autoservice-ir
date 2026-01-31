@@ -1,4 +1,9 @@
 public final class com/fueledbycaffeine/autoservice/ir/AutoServiceCommandLineProcessor : org/jetbrains/kotlin/compiler/plugin/CommandLineProcessor {
+	public static final field Companion Lcom/fueledbycaffeine/autoservice/ir/AutoServiceCommandLineProcessor$Companion;
+	public static final field OPTION_NAME_DEBUG Ljava/lang/String;
+	public static final field OPTION_NAME_OUTPUT_DIR Ljava/lang/String;
+	public static final field OPTION_NAME_PROJECT_ROOT Ljava/lang/String;
+	public static final field PLUGIN_ID Ljava/lang/String;
 	public fun <init> ()V
 	public fun appendList (Lorg/jetbrains/kotlin/config/CompilerConfiguration;Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;Ljava/lang/Object;)V
 	public fun appendList (Lorg/jetbrains/kotlin/config/CompilerConfiguration;Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;Ljava/util/List;)V
@@ -7,6 +12,9 @@ public final class com/fueledbycaffeine/autoservice/ir/AutoServiceCommandLinePro
 	public fun getPluginOptions ()Ljava/util/Collection;
 	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/AbstractCliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
 	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/CliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
+}
+
+public final class com/fueledbycaffeine/autoservice/ir/AutoServiceCommandLineProcessor$Companion {
 }
 
 public final class com/fueledbycaffeine/autoservice/ir/AutoServiceComponentRegistrar : org/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar {
