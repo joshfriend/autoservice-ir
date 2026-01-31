@@ -4,6 +4,9 @@ import com.autonomousapps.kit.GradleProject
 import com.autonomousapps.kit.truth.TestKitTruth.Companion.assertThat
 import com.fueledbycaffeine.autoservice.functionaltest.fixtures.AutoServiceProject
 import com.fueledbycaffeine.autoservice.functionaltest.fixtures.build
+import com.fueledbycaffeine.autoservice.functionaltest.fixtures.ccReport
+import com.fueledbycaffeine.autoservice.functionaltest.fixtures.configurationCacheReused
+import com.fueledbycaffeine.autoservice.functionaltest.fixtures.configurationCacheStored
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -39,6 +42,10 @@ class AutoServiceFunctionalTest {
     // Then
     assertThat(result).task(":jar").succeeded()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
+    assertThat(result.configurationCacheStored).isTrue()
+    val report = result.ccReport()
+    assertThat(report.totalProblemCount).isEqualTo(0)
+    assertThat(report.inputs).isEmpty()
   }
 
   @Test
@@ -52,6 +59,7 @@ class AutoServiceFunctionalTest {
     // Then
     assertThat(result).task(":jar").succeeded()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger")
+    assertThat(result.configurationCacheStored).isTrue()
   }
 
   @Test
@@ -66,6 +74,7 @@ class AutoServiceFunctionalTest {
     assertThat(result).task(":jar").succeeded()
     project.assertServiceInJar("test.ServiceA", "test.MultiServiceImpl")
     project.assertServiceInJar("test.ServiceB", "test.MultiServiceImpl")
+    assertThat(result.configurationCacheStored).isTrue()
   }
 
   @Test
@@ -79,6 +88,7 @@ class AutoServiceFunctionalTest {
     // Then
     assertThat(result).task(":jar").succeeded()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger", "test.FileLogger")
+    assertThat(result.configurationCacheStored).isTrue()
   }
 
   @Test
@@ -92,6 +102,7 @@ class AutoServiceFunctionalTest {
     // Then
     assertThat(result).task(":jar").succeeded()
     project.assertServiceInJar("test.Logger", "test.GoogleLogger")
+    assertThat(result.configurationCacheStored).isTrue()
   }
 
   @Test
@@ -105,6 +116,7 @@ class AutoServiceFunctionalTest {
     // Then
     assertThat(result).task(":jar").succeeded()
     project.assertServiceInJar("test.Logger", "test.OurLogger", "test.GoogleLogger")
+    assertThat(result.configurationCacheStored).isTrue()
   }
 
   @Test
@@ -114,12 +126,14 @@ class AutoServiceFunctionalTest {
 
     // When
     val firstResult = project.build("jar")
-    val cleanResult = project.build("clean", "jar")
+    project.build("clean")
+    val cleanResult = project.build("jar")
 
     // Then
     assertThat(firstResult).task(":jar").succeeded()
-    assertThat(cleanResult).task(":clean").succeeded()
     assertThat(cleanResult).task(":jar").succeeded()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
+    assertThat(firstResult.configurationCacheStored).isTrue()
+    assertThat(cleanResult.configurationCacheReused).isTrue()
   }
 }

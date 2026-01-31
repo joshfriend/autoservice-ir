@@ -121,6 +121,8 @@ dependencies {
   functionalTestApi(libs.junit5.api)
   functionalTestImplementation(libs.truth)
   functionalTestImplementation(platform(libs.junit5.bom))
+  functionalTestImplementation(libs.moshi)
+  functionalTestImplementation(libs.moshi.kotlin)
   functionalTestRuntimeOnly(libs.junit5.engine)
   functionalTestRuntimeOnly(libs.junit5.launcher)
   functionalTestCompileOnly(libs.autoService)

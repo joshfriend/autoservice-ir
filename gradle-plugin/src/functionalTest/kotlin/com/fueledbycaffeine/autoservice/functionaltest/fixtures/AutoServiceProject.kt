@@ -4,6 +4,7 @@ import com.autonomousapps.kit.AbstractGradleProject
 import com.autonomousapps.kit.GradleProject
 import com.autonomousapps.kit.Source
 import com.autonomousapps.kit.gradle.Dependency
+import com.autonomousapps.kit.gradle.GradleProperties
 import com.autonomousapps.kit.gradle.Plugin
 
 // Use the version from gradle.properties since AbstractGradleProject.PLUGIN_UNDER_TEST_VERSION 
@@ -14,6 +15,13 @@ private const val PLUGIN_VERSION = "0.1.0-SNAPSHOT"
  * Creates test projects for AutoService functional tests.
  */
 class AutoServiceProject : AbstractGradleProject() {
+  private fun gradleProperties() = GradleProperties.of(
+    "org.gradle.parallel=true",
+    "org.gradle.configureondemand=true",
+    "org.gradle.configuration-cache=true",
+    "org.gradle.configuration-cache.parallel=true",
+    "kotlin.internal.collectFUSMetrics=false",
+  )
 
   /**
    * Simple single-interface, single-implementation with type inference.
@@ -22,6 +30,7 @@ class AutoServiceProject : AbstractGradleProject() {
     dslKind: GradleProject.DslKind = GradleProject.DslKind.KOTLIN
   ): GradleProject = newGradleProjectBuilder(dslKind)
     .withRootProject {
+      gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
           Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
@@ -61,6 +70,7 @@ class AutoServiceProject : AbstractGradleProject() {
     dslKind: GradleProject.DslKind = GradleProject.DslKind.KOTLIN
   ): GradleProject = newGradleProjectBuilder(dslKind)
     .withRootProject {
+      gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
           Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
@@ -100,6 +110,7 @@ class AutoServiceProject : AbstractGradleProject() {
     dslKind: GradleProject.DslKind = GradleProject.DslKind.KOTLIN
   ): GradleProject = newGradleProjectBuilder(dslKind)
     .withRootProject {
+      gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
           Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
@@ -139,6 +150,7 @@ class AutoServiceProject : AbstractGradleProject() {
     dslKind: GradleProject.DslKind = GradleProject.DslKind.KOTLIN
   ): GradleProject = newGradleProjectBuilder(dslKind)
     .withRootProject {
+      gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
           Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
@@ -192,6 +204,7 @@ class AutoServiceProject : AbstractGradleProject() {
     dslKind: GradleProject.DslKind = GradleProject.DslKind.KOTLIN
   ): GradleProject = newGradleProjectBuilder(dslKind)
     .withRootProject {
+      gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
           Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
@@ -234,6 +247,7 @@ class AutoServiceProject : AbstractGradleProject() {
     dslKind: GradleProject.DslKind = GradleProject.DslKind.KOTLIN
   ): GradleProject = newGradleProjectBuilder(dslKind)
     .withRootProject {
+      gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
           Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),

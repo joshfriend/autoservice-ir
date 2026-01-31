@@ -15,16 +15,11 @@ private val gradleVersion: GradleVersion
       GradleVersion.version(versionString)
     }
   }
-
 fun GradleProject.build(rootDir: File, vararg args: String): BuildResult =
-  GradleBuilder.build(gradleVersion, rootDir, *args)
+  GradleBuilder.build(gradleVersion, rootDir, *args, "--info")
 
-fun GradleProject.build(vararg args: String): BuildResult {
-  requireNotNull(this.rootDir) { "GradleProject.rootDir is null" }
-  return GradleBuilder.build(gradleVersion, this.rootDir, *args)
-}
+fun GradleProject.build(vararg args: String): BuildResult =
+  GradleBuilder.build(gradleVersion, rootDir, *args, "--info")
 
-fun GradleProject.buildAndFail(vararg args: String): BuildResult {
-  requireNotNull(this.rootDir) { "GradleProject.rootDir is null" }
-  return GradleBuilder.buildAndFail(gradleVersion, this.rootDir, *args)
-}
+fun GradleProject.buildAndFail(vararg args: String): BuildResult =
+  GradleBuilder.buildAndFail(gradleVersion, rootDir, *args, "--info")

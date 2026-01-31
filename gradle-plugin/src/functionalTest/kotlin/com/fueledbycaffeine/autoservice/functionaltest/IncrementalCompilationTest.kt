@@ -5,6 +5,8 @@ import com.autonomousapps.kit.truth.TestKitTruth.Companion.assertThat
 import com.fueledbycaffeine.autoservice.functionaltest.fixtures.AutoServiceProject
 import com.fueledbycaffeine.autoservice.functionaltest.fixtures.build
 import com.fueledbycaffeine.autoservice.functionaltest.fixtures.buildAndFail
+import com.fueledbycaffeine.autoservice.functionaltest.fixtures.configurationCacheReused
+import com.fueledbycaffeine.autoservice.functionaltest.fixtures.configurationCacheStored
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -67,6 +69,7 @@ class IncrementalCompilationTest {
     // When - First build without annotation
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertNoServiceInJar("test.MyService")
     
     // Then - Add @AutoService annotation
@@ -83,6 +86,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
   }
 
@@ -94,6 +98,7 @@ class IncrementalCompilationTest {
     // When - First build with both implementations
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger", "test.FileLogger")
     
     // Then - Remove annotation from one implementation
@@ -109,6 +114,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceNotInJar("test.Logger", "test.ConsoleLogger")
     project.assertServiceInJar("test.Logger", "test.FileLogger")
   }
@@ -121,6 +127,7 @@ class IncrementalCompilationTest {
     // When - Build with inferred type
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
     
     // Then - Change to explicit type
@@ -138,6 +145,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
   }
 
@@ -149,6 +157,7 @@ class IncrementalCompilationTest {
     // When - Build with single interface
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger")
     
     // Add a second interface
@@ -176,6 +185,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger")
     project.assertServiceInJar("test.Cache", "test.ConsoleLogger")
   }
@@ -188,6 +198,7 @@ class IncrementalCompilationTest {
     // When - Build with both interfaces
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.ServiceA", "test.MultiServiceImpl")
     project.assertServiceInJar("test.ServiceB", "test.MultiServiceImpl")
     
@@ -207,6 +218,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.ServiceA", "test.MultiServiceImpl")
     project.assertServiceNotInJar("test.ServiceB", "test.MultiServiceImpl")
   }
@@ -219,6 +231,7 @@ class IncrementalCompilationTest {
     // When - Build with Google's annotation
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.Logger", "test.GoogleLogger")
     
     // Then - Switch to our annotation with inference
@@ -236,6 +249,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.Logger", "test.GoogleLogger")
   }
 
@@ -247,6 +261,7 @@ class IncrementalCompilationTest {
     // When - Initial build
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
     
     // Then - Add a second implementation
@@ -263,6 +278,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")  // Incremental build
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl", "test.AnotherServiceImpl")
   }
 
@@ -274,6 +290,7 @@ class IncrementalCompilationTest {
     // When - Build with both
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger", "test.FileLogger")
     
     // Then - Delete one implementation
@@ -286,6 +303,7 @@ class IncrementalCompilationTest {
     // 2. Runs our IR extension which validates service files and removes stale entries
     val secondBuild = project.build("jar")
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger")
     project.assertServiceNotInJar("test.Logger", "test.FileLogger")
   }
@@ -298,6 +316,7 @@ class IncrementalCompilationTest {
     // When
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger", "test.FileLogger")
     
     // Add a new source file
@@ -321,6 +340,7 @@ class IncrementalCompilationTest {
     // Incremental build (not clean)
     val secondBuild = project.build("jar")
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.Logger", "test.ConsoleLogger", "test.FileLogger", "test.NetworkLogger")
   }
 
@@ -332,6 +352,7 @@ class IncrementalCompilationTest {
     // When - Initial build
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
     
     // Then - Change the interface (supertype change)
@@ -362,6 +383,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
   }
 
@@ -373,6 +395,7 @@ class IncrementalCompilationTest {
     // When - Initial build succeeds
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
     
     // Then - Remove the supertype but keep @AutoService with no parameters
@@ -403,6 +426,7 @@ class IncrementalCompilationTest {
     // When - Initial build
     val firstBuild = project.build("jar")
     assertThat(firstBuild).task(":jar").succeeded()
+    assertThat(firstBuild.configurationCacheStored).isTrue()
     project.assertServiceInJar("test.MyService", "test.MyServiceImpl")
     
     // Then - Change to implement a different interface
@@ -430,6 +454,7 @@ class IncrementalCompilationTest {
     
     val secondBuild = project.build("jar")
     assertThat(secondBuild).task(":jar").succeeded()
+    assertThat(secondBuild.configurationCacheReused).isTrue()
     project.assertServiceNotInJar("test.MyService", "test.MyServiceImpl")
     project.assertServiceInJar("test.OtherService", "test.MyServiceImpl")
   }
