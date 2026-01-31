@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  alias(libs.plugins.binaryCompatibilityValidator)
-  alias(libs.plugins.kotlinJvm)
-  alias(libs.plugins.mavenPublish)
+  id("org.jetbrains.kotlinx.binary-compatibility-validator")
+  id("org.jetbrains.kotlin.jvm")
+  id("com.vanniktech.maven.publish")
   id("com.autonomousapps.testkit")
 }
 

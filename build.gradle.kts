@@ -1,8 +1,8 @@
 plugins {
-  alias(libs.plugins.binaryCompatibilityValidator) apply false
-  alias(libs.plugins.buildConfig) apply false
-  alias(libs.plugins.kotlinJvm) apply false
-  alias(libs.plugins.mavenPublish) apply false
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") apply false
+  id("com.github.gmazzo.buildconfig") apply false
+  id("org.jetbrains.kotlin.jvm") apply false
+  id("com.vanniktech.maven.publish") apply false
 }
 
 group = providers.gradleProperty("GROUP").get()

@@ -1,21 +1,11 @@
 [versions]
 autoService = "1.1.1"
-binaryCompatibilityValidator = "0.17.0"
-buildConfig = "6.0.7"
 jdk = "21"
 jvmTarget = "17"
 kotlin = "2.3.0"
 kotlinCompileTesting = "0.12.1"
-kotlinpoet = "2.0.0"
 moshi = "1.15.2"
-testkitPlugin = "0.14"
 testkitLibs = "0.18"
-
-[plugins]
-binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
-buildConfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildConfig" }
-kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
 
 [libraries]
 # Google's AutoService (optional - for compatibility only)
