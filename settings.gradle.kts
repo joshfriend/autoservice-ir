@@ -28,6 +28,11 @@ dependencyResolutionManagement {
   repositories {
     mavenCentral()
     gradlePluginPortal()
+    // R8 releases repository
+    maven("https://storage.googleapis.com/r8-releases/raw/") {
+      name = "R8-Releases"
+      content { includeModule("com.android.tools", "r8") }
+    }
   }
 }
 

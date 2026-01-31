@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -26,6 +27,22 @@ import org.jetbrains.kotlin.name.FqName
 private val GOOGLE_AUTO_SERVICE_ANNOTATION = FqName("com.google.auto.service.AutoService")
 private val AUTOSERVICE_ANNOTATION = FqName("com.fueledbycaffeine.autoservice.AutoService")
 private val SUPPRESS_WARNINGS_ANNOTATION = FqName("kotlin.Suppress")
+
+/**
+ * Convert an IrClass to its JVM binary class name.
+ * For nested classes, this uses '$' as the separator instead of '.'.
+ * e.g., "com.example.Outer.Inner" becomes "com.example.Outer$Inner"
+ */
+private fun IrClass.jvmBinaryName(): String? {
+  val classId = this.classId ?: return null
+  val packageFqName = classId.packageFqName.asString()
+  val relativeClassName = classId.relativeClassName.asString().replace('.', '$')
+  return if (packageFqName.isEmpty()) {
+    relativeClassName
+  } else {
+    "$packageFqName.$relativeClassName"
+  }
+}
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class AutoServiceIrVisitor(
@@ -54,7 +71,7 @@ internal class AutoServiceIrVisitor(
     super.visitClass(declaration)
 
     // Track all classes in the module for detecting deleted files
-    val className = declaration.fqNameWhenAvailable?.asString()
+    val className = declaration.jvmBinaryName()
     if (className != null) {
       serviceRegistry.trackModuleClass(className)
       serviceRegistry.trackCompiledClass(className)
@@ -89,7 +106,7 @@ internal class AutoServiceIrVisitor(
       return
     }
 
-    val providerClass = declaration.fqNameWhenAvailable?.asString() ?: run {
+    val providerClass = declaration.jvmBinaryName() ?: run {
       diagnosticReporter.report(
         AutoServiceIrDiagnostics.ERROR,
         "${declaration.locationString()}: Could not determine FQ name for ${declaration.name}"
@@ -133,11 +150,11 @@ internal class AutoServiceIrVisitor(
     val explicitInterfaces = when (val valueArgument = annotation.nonDispatchArguments.firstOrNull()) {
       is IrVararg -> {
         valueArgument.elements.mapNotNull { element ->
-          (element as? IrClassReference)?.classType?.classOrNull?.owner?.fqNameWhenAvailable?.asString()
+          (element as? IrClassReference)?.classType?.classOrNull?.owner?.jvmBinaryName()
         }
       }
       is IrClassReference -> {
-        valueArgument.classType.classOrNull?.owner?.fqNameWhenAvailable?.asString()?.let { listOf(it) } ?: emptyList()
+        valueArgument.classType.classOrNull?.owner?.jvmBinaryName()?.let { listOf(it) } ?: emptyList()
       }
       else -> emptyList()
     }
@@ -165,7 +182,7 @@ internal class AutoServiceIrVisitor(
       val superClass = superType.classOrNull?.owner
       // Exclude kotlin.Any
       if (superClass != null && superClass.fqNameWhenAvailable?.asString() != "kotlin.Any") {
-        superClass.fqNameWhenAvailable?.asString()
+        superClass.jvmBinaryName()
       } else {
         null
       }
@@ -196,10 +213,30 @@ internal class AutoServiceIrVisitor(
   }
 
   private fun checkImplements(declaration: IrClass, serviceInterface: String): Boolean {
-    val serviceFqName = FqName(serviceInterface)
-    val serviceClass = pluginContext.referenceClass(
-      ClassId.topLevel(serviceFqName)
-    )?.owner ?: return false
+    // Convert JVM binary name (with $) back to ClassId
+    // e.g., "com.example.Outer$Inner" -> ClassId(FqName("com.example"), FqName("Outer.Inner"))
+    val lastDot = serviceInterface.lastIndexOf('.')
+    val (packageName, relativeClassName) = if (lastDot >= 0) {
+      // Find where the package ends and the class name begins
+      // We need to find the first segment that starts with uppercase (class name)
+      val segments = serviceInterface.split('.')
+      var packageEndIndex = 0
+      for ((index, segment) in segments.withIndex()) {
+        // Check if this segment contains $ (nested class) or starts with uppercase (class name)
+        if (segment.contains('$') || segment.firstOrNull()?.isUpperCase() == true) {
+          packageEndIndex = index
+          break
+        }
+      }
+      val packagePart = segments.take(packageEndIndex).joinToString(".")
+      val classPart = segments.drop(packageEndIndex).joinToString(".").replace('$', '.')
+      packagePart to classPart
+    } else {
+      "" to serviceInterface.replace('$', '.')
+    }
+    
+    val classId = ClassId(FqName(packageName), FqName(relativeClassName), false)
+    val serviceClass = pluginContext.referenceClass(classId)?.owner ?: return false
 
     return declaration.isSubclassOf(serviceClass)
   }

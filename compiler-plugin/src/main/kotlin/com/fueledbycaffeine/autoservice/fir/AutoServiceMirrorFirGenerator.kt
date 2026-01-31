@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
+import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.name.ClassId
@@ -74,11 +75,10 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     classSymbol: FirClassSymbol<*>,
     context: NestedClassGenerationContext,
   ): Set<Name> {
-    // Check if this class has @AutoService annotation (unresolved check)
+    // Check if this class has @AutoService annotation
+    // During this phase, annotations may not be resolved yet, so we need to handle both cases
     val hasAutoServiceAnnotation = classSymbol.fir.annotations.any { annotation ->
-      val classId = annotation.annotationTypeRef.coneType.classId
-      classId?.asSingleFqName() == AutoServiceSymbols.FqNames.AUTOSERVICE ||
-        classId?.asSingleFqName() == AutoServiceSymbols.FqNames.GOOGLE_AUTOSERVICE
+      isAutoServiceAnnotation(annotation.annotationTypeRef)
     }
     
     if (!hasAutoServiceAnnotation) {
@@ -128,5 +128,16 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     
     // Private constructor to prevent instantiation
     return listOf(createDefaultPrivateConstructor(context.owner, Key).symbol)
+  }
+
+  /**
+   * Checks if the given type reference refers to an AutoService annotation.
+   */
+  private fun isAutoServiceAnnotation(typeRef: org.jetbrains.kotlin.fir.types.FirTypeRef): Boolean {
+    // By the time we're called, annotations should be resolved since our predicate already matched
+    if (typeRef !is FirResolvedTypeRef) return false
+    val classId = typeRef.coneType.classId ?: return false
+    return classId == AutoServiceSymbols.ClassIds.AUTOSERVICE ||
+      classId == AutoServiceSymbols.ClassIds.GOOGLE_AUTOSERVICE
   }
 }

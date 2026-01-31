@@ -8,6 +8,7 @@ A Kotlin compiler plugin implementation of Google's AutoService annotation proce
 - **K2 Compiler Support**: Fully compatible with Kotlin 2.0+ (K2 compiler) using both FIR and IR
 - **FIR and IR-based**: Leverages Kotlin's modern compiler plugin infrastructure which is faster than KSP/Kapt
 - **Drop-in replacement**: Can replace KSP or KAPT-based AutoService processing
+- **ProGuard/R8 rules generation**: Automatically generates keep rules to preserve service implementations during minification
 
 ## Installation
 Add the AutoService Gradle plugin to your build configuration:
@@ -236,20 +237,43 @@ dependencies {
 | K2 Support                   | ✅ Yes (Native)     | ✅ Yes                               | ❌ No                                    |
 | Type Inference               | ✅ Yes              | ❌ No                                | ❌ No                                    |
 | Service file merging         | ✅ Yes              | ❌ No                                | ✅ Yes                                   |
+| ProGuard/R8 rules            | ✅ Included         | ❌ Manual                            | ❌ Manual                                |
 | Incremental compilation      | ✅ Full support     | ⚠️ Isolating only                   | ⚠️ Aggregating only                     |
 | Real-time IDE error checking | ✅ Yes (FIR)        | ❌ Build required                    | ❌ Build required                        |
 | Compilation Speed            | 🚀 Fastest         | ⚡ Faster                            | 🐌 Slow                                 |
 | Setup Complexity             | ✅ Simple           | ⚠️ Medium                           | ⚠️ Medium                               |
 
 
-## Debugging
-The plugin can be configured to emit debugging information via the `autoService` extension in your build file:
+## Configuration
+The plugin can be configured via the `autoService` extension in your build file:
 
 ```kotlin
 autoService {
+    // Enable debug logging (default: false)
     debug(true)
 }
 ```
+
+You can also use a Gradle property to enable this (`autoservice.debug=true`).
+
+### ProGuard/R8 Support
+The plugin automatically supports ProGuard and R8 minification through **annotation-based keep rules** bundled in the annotations artifact:
+
+```proguard
+# Bundled in META-INF/proguard/autoservice-annotations.pro
+-keep @com.fueledbycaffeine.autoservice.AutoService class * {
+    <init>();
+}
+-keep @com.google.auto.service.AutoService class * {
+    <init>();
+}
+```
+
+These rules automatically preserve any class annotated with `@AutoService` along with its no-argument constructor (required by `ServiceLoader`).
+
+This works automatically with Android's default ProGuard/R8 configuration, which consumes rules from `META-INF/proguard/` in dependencies. No additional configuration is needed.
+
+## Debugging
 
 When you compile, you'll see output like:
 ```

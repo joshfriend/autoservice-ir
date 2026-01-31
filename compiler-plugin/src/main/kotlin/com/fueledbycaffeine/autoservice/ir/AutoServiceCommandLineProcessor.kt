@@ -19,26 +19,38 @@ internal val KEY_PROJECT_ROOT =
  * This class is registered via META-INF/services/org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
  */
 public class AutoServiceCommandLineProcessor : CommandLineProcessor {
-  internal companion object {
-    val OPTION_DEBUG =
+  public companion object {
+    /** Compiler plugin ID for the AutoService plugin. */
+    public const val PLUGIN_ID: String = "com.fueledbycaffeine.autoservice.compiler"
+    
+    /** Option name for debug logging. */
+    public const val OPTION_NAME_DEBUG: String = "debug"
+    
+    /** Option name for output directory. */
+    public const val OPTION_NAME_OUTPUT_DIR: String = "outputDir"
+    
+    /** Option name for project root directory. */
+    public const val OPTION_NAME_PROJECT_ROOT: String = "projectRoot"
+    
+    internal val OPTION_DEBUG =
       CliOption(
-        optionName = "debug",
+        optionName = OPTION_NAME_DEBUG,
         valueDescription = "<true | false>",
         description = KEY_DEBUG.toString(),
         required = false,
         allowMultipleOccurrences = false,
       )
-    val OPTION_OUTPUT_DIR =
+    internal val OPTION_OUTPUT_DIR =
       CliOption(
-        optionName = "outputDir",
+        optionName = OPTION_NAME_OUTPUT_DIR,
         valueDescription = "String",
         description = KEY_OUTPUT_DIR.toString(),
         required = false,
         allowMultipleOccurrences = false,
       )
-    val OPTION_PROJECT_ROOT =
+    internal val OPTION_PROJECT_ROOT =
       CliOption(
-        optionName = "projectRoot",
+        optionName = OPTION_NAME_PROJECT_ROOT,
         valueDescription = "String",
         description = KEY_PROJECT_ROOT.toString(),
         required = false,
@@ -46,7 +58,7 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
       )
   }
 
-  override val pluginId: String = "com.fueledbycaffeine.autoservice.compiler"
+  override val pluginId: String = PLUGIN_ID
 
   override val pluginOptions: Collection<AbstractCliOption> =
     listOf(OPTION_DEBUG, OPTION_OUTPUT_DIR, OPTION_PROJECT_ROOT)
@@ -57,9 +69,9 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
     configuration: CompilerConfiguration,
   ): Unit =
     when (option.optionName) {
-      "debug" -> configuration.put(KEY_DEBUG, value.toBoolean())
-      "outputDir" -> configuration.put(KEY_OUTPUT_DIR, value)
-      "projectRoot" -> configuration.put(KEY_PROJECT_ROOT, value)
+      OPTION_NAME_DEBUG -> configuration.put(KEY_DEBUG, value.toBoolean())
+      OPTION_NAME_OUTPUT_DIR -> configuration.put(KEY_OUTPUT_DIR, value)
+      OPTION_NAME_PROJECT_ROOT -> configuration.put(KEY_PROJECT_ROOT, value)
       else -> error("Unknown plugin option: ${option.optionName}")
     }
 }

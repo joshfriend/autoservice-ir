@@ -5,8 +5,11 @@ plugins {
   id("com.vanniktech.maven.publish") apply false
 }
 
-group = providers.gradleProperty("GROUP").get()
-version = providers.gradleProperty("VERSION_NAME").get()
+val groupName = providers.gradleProperty("GROUP").get()
+val versionName = providers.gradleProperty("VERSION_NAME").get()
+
+group = groupName
+version = versionName
 
 dependencyAnalysis {
   reporting {

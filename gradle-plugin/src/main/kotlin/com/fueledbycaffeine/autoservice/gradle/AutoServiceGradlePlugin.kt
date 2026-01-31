@@ -1,5 +1,6 @@
 package com.fueledbycaffeine.autoservice.gradle
 
+import com.fueledbycaffeine.autoservice.ir.AutoServiceCommandLineProcessor
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -10,19 +11,15 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 public class AutoServiceGradlePlugin : KotlinCompilerPluginSupportPlugin {
   
   override fun apply(target: Project) {
-    target.extensions.create("autoService", AutoServiceExtension::class.java)
-    
-    // Automatically add our annotations to the compile classpath
-    // Users don't need to manually add this dependency
-    target.dependencies.add("implementation", "com.fueledbycaffeine.autoservice:annotations:$VERSION")
+    AutoServiceExtension.create(target.extensions)
   }
 
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = true
 
-  override fun getCompilerPluginId(): String = "com.fueledbycaffeine.autoservice.compiler"
+  override fun getCompilerPluginId(): String = AutoServiceCommandLineProcessor.PLUGIN_ID
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-    groupId = "com.fueledbycaffeine.autoservice",
+    groupId = GROUP,
     artifactId = "compiler-plugin",
     version = VERSION,
   )
@@ -33,21 +30,32 @@ public class AutoServiceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     val project = kotlinCompilation.target.project
     val extension = project.extensions.getByType(AutoServiceExtension::class.java)
 
+    // Automatically add our annotations to the compile classpath
+    // Users don't need to manually add this dependency
+    project.dependencies.add(
+      kotlinCompilation.defaultSourceSet.implementationConfigurationName,
+      "$GROUP:annotations:$VERSION",
+    )
+
     return project.provider {
-      val options = mutableListOf<SubpluginOption>()
-      
-      if (extension.debug.isPresent) {
-        options.add(SubpluginOption("debug", extension.debug.get().toString()))
+      buildList {
+        add(SubpluginOption(
+          AutoServiceCommandLineProcessor.OPTION_NAME_DEBUG,
+          extension.debug.get().toString(),
+        ))
+
+        // Set output directory to the compilation's destination directory
+        add(SubpluginOption(
+          AutoServiceCommandLineProcessor.OPTION_NAME_OUTPUT_DIR,
+          kotlinCompilation.defaultSourceSet.kotlin.classesDirectory.get().asFile.absolutePath,
+        ))
+
+        // Pass project root for relative path display in error messages
+        add(SubpluginOption(
+          AutoServiceCommandLineProcessor.OPTION_NAME_PROJECT_ROOT,
+          project.rootDir.absolutePath,
+        ))
       }
-      
-      // Set output directory to the compilation's destination directory
-      val outputDir = kotlinCompilation.defaultSourceSet.kotlin.classesDirectory.get().asFile
-      options.add(SubpluginOption("outputDir", outputDir.absolutePath))
-      
-      // Pass project root for relative path display in error messages
-      options.add(SubpluginOption("projectRoot", project.rootDir.absolutePath))
-      
-      options
     }
   }
 }

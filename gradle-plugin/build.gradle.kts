@@ -13,6 +13,7 @@ buildConfig {
     internalVisibility = true
   }
   buildConfigField("String", "VERSION", providers.gradleProperty("VERSION_NAME").map { "\"$it\"" })
+  buildConfigField("String", "GROUP", providers.gradleProperty("GROUP").map { "\"$it\"" })
 }
 
 gradlePlugin {

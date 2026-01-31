@@ -36,4 +36,8 @@ dependencies {
   testImplementation(libs.kotlinCompileTesting)
   testImplementation(libs.junit4)
   testImplementation(kotlin("test"))
+  
+  // ProGuard/R8 for minification integration tests
+  testImplementation(libs.proguard.base)
+  testImplementation(libs.r8)
 }

@@ -15,6 +15,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 class BasePlugin : Plugin<Project> {
   override fun apply(target: Project) = target.run {
+    group = providers.gradleProperty("GROUP").get()
+    version = providers.gradleProperty("VERSION_NAME").get()
+
     pluginManager.apply("org.jetbrains.kotlinx.binary-compatibility-validator")
     pluginManager.apply("org.jetbrains.kotlin.jvm")
     pluginManager.apply(PublishConventionPlugin::class.java)
