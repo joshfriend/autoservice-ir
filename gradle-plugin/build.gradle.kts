@@ -57,6 +57,8 @@ dependencies {
   compileOnly(libs.autoService)
 
   functionalTestApi(libs.junit5.api)
+  functionalTestImplementation(libs.autonomousapps.testkit.support)
+  functionalTestImplementation(libs.autonomousapps.testkit.truth)
   functionalTestImplementation(libs.truth)
   functionalTestImplementation(platform(libs.junit5.bom))
   functionalTestImplementation(libs.moshi)
