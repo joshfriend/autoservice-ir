@@ -58,7 +58,7 @@ class BasePlugin : Plugin<Project> {
     tasks.withType(Test::class.java).configureEach { task ->
       task.useJUnit()
       task.testLogging { logging ->
-        logging.events("passed", "skipped", "failed", "standardOut", "standardError")
+        logging.events("passed", "skipped", "failed", "standardError")
         logging.exceptionFormat = TestExceptionFormat.SHORT
         logging.showExceptions = true
         logging.showCauses = true

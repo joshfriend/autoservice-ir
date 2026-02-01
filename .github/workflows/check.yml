@@ -56,6 +56,13 @@ jobs:
       run: ./gradlew :buildHealth
 
   functionalTest:
+    strategy:
+      matrix:
+        kotlin_version:
+          - 2.3.0
+        gradle_version:
+          - 8.14.3
+          - 9.3.1
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,4 +80,18 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
 
     - name: Functional Tests
-      run: ./gradlew functionalTest
+      run: ./gradlew functionalTest -DgradleVersion=${{ matrix.gradle_version }} -DkotlinVersion=${{ matrix.kotlin_version }}
+
+  functionalTest-results:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Functional Test Results
+    needs: [functionalTest]
+    steps:
+      - run: |
+          result="${{ needs.functionalTest.result }}"
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
