@@ -17,19 +17,56 @@ internal val KEY_PROJECT_ROOT =
  * Processes command line options for the AutoService compiler plugin.
  * 
  * This class is registered via META-INF/services/org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
+ * and is used by the Kotlin compiler to parse plugin-specific command line arguments.
+ * 
+ * ## Usage
+ * 
+ * These constants are primarily used by:
+ * - The [AutoServiceGradlePlugin][com.fueledbycaffeine.autoservice.gradle.AutoServiceGradlePlugin] 
+ *   to pass options to the compiler
+ * - Custom build tool integrations that need to invoke the compiler plugin directly
+ * 
+ * @see AutoServiceComponentRegistrar for the plugin registration
  */
 public class AutoServiceCommandLineProcessor : CommandLineProcessor {
   public companion object {
-    /** Compiler plugin ID for the AutoService plugin. */
+    /**
+     * The unique identifier for the AutoService compiler plugin.
+     * 
+     * This ID is used by the Kotlin compiler to identify and route options to this plugin.
+     * It must match the [AutoServiceComponentRegistrar.pluginId].
+     */
     public const val PLUGIN_ID: String = "com.fueledbycaffeine.autoservice.compiler"
     
-    /** Option name for debug logging. */
+    /**
+     * Option name for enabling debug logging.
+     * 
+     * When enabled, the plugin outputs detailed information about:
+     * - Which classes are being processed
+     * - Inferred service interfaces
+     * - Service file generation
+     * 
+     * Value: `"true"` or `"false"` (default: `"false"`)
+     */
     public const val OPTION_NAME_DEBUG: String = "debug"
     
-    /** Option name for output directory. */
+    /**
+     * Option name for specifying the output directory for generated service files.
+     * 
+     * This should be the classes output directory where `META-INF/services` will be created.
+     * The Gradle plugin automatically sets this to the compilation's classes directory.
+     * 
+     * Value: Absolute path to the output directory
+     */
     public const val OPTION_NAME_OUTPUT_DIR: String = "outputDir"
     
-    /** Option name for project root directory. */
+    /**
+     * Option name for specifying the project root directory.
+     * 
+     * Used for displaying relative paths in error messages for better IDE integration.
+     * 
+     * Value: Absolute path to the project root
+     */
     public const val OPTION_NAME_PROJECT_ROOT: String = "projectRoot"
     
     internal val OPTION_DEBUG =

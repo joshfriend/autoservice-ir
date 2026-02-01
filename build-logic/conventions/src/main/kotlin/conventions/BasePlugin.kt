@@ -8,6 +8,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
@@ -44,8 +45,9 @@ class BasePlugin : Plugin<Project> {
 
     tasks.withType(KotlinCompile::class.java).configureEach { task ->
       task.compilerOptions { options ->
-//        options.allWarningsAsErrors.set(true)
+        options.allWarningsAsErrors.set(true)
         options.jvmTarget.set(JvmTarget.fromTarget(jvmTarget))
+        options.freeCompilerArgs.add("-Xannotation-default-target=param-property")
       }
     }
 
@@ -55,6 +57,12 @@ class BasePlugin : Plugin<Project> {
 
     tasks.withType(Test::class.java).configureEach { task ->
       task.useJUnit()
+      task.testLogging { logging ->
+        logging.events("passed", "skipped", "failed", "standardOut", "standardError")
+        logging.exceptionFormat = TestExceptionFormat.SHORT
+        logging.showExceptions = true
+        logging.showCauses = true
+      }
     }
   }
 }

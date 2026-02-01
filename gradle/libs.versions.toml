@@ -7,8 +7,6 @@ kotlin = "2.3.0"
 kotlinCompileTesting = "0.12.1"
 mavenPublish = "0.36.0"
 moshi = "1.15.2"
-proguard = "7.6.1"
-r8 = "8.7.20"
 testkitLibs = "0.22"
 testkitTruthVersion = "1.6.1"
 testkitPlugin = "0.17"
@@ -20,6 +18,7 @@ autoService = { module = "com.google.auto.service:auto-service-annotations", ver
 kotlin-compilerEmbeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
 
@@ -37,10 +36,6 @@ autonomousapps-testkit-truth = { module = "com.autonomousapps:gradle-testkit-tru
 autonomousapps-testkitPlugin = { module = "com.autonomousapps:gradle-testkit-plugin", version.ref = "testkitPlugin" }
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
-
-# ProGuard/R8 for minification tests
-proguard-base = { module = "com.guardsquare:proguard-base", version.ref = "proguard" }
-r8 = { module = "com.android.tools:r8", version.ref = "r8" }
 
 # Convention plugin dependencies
 kotlinx-binaryCompatibilityValidator = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }

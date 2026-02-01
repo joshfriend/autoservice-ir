@@ -10,10 +10,17 @@ import java.io.File
  * Supports incremental compilation by:
  * - Merging with existing service files
  * - Removing entries for classes that were compiled but no longer have @AutoService
+ *
+ * Use the [use] method to ensure service files are generated after all IR transformations complete:
+ * ```
+ * serviceRegistry.use { visitor ->
+ *   moduleFragment.accept(visitor, null)
+ * }
+ * ```
  */
 internal class ServiceRegistry(
   private val diagnosticReporter: IrDiagnosticReporter,
-  private val debug: Boolean,
+  private val debugLogger: AutoServiceDebugLogger?,
   private val outputDirPath: String?,
 ) : Closeable {
   private val providers = mutableMapOf<String, MutableSet<String>>()
@@ -56,12 +63,7 @@ internal class ServiceRegistry(
       getOutputDirectory()
     }
     
-    if (debug) {
-      diagnosticReporter.report(
-        AutoServiceIrDiagnostics.INFO,
-        "AutoService: Output dir path = $outputDirPath, resolved dir = ${outputDir?.absolutePath}"
-      )
-    }
+    debugLogger?.log("Output dir path = $outputDirPath, resolved dir = ${outputDir?.absolutePath}")
     
     if (outputDir == null) {
       diagnosticReporter.report(
@@ -88,10 +90,7 @@ internal class ServiceRegistry(
     }
     servicesDir.mkdirs()
     
-    diagnosticReporter.report(
-      AutoServiceIrDiagnostics.INFO,
-      "AutoService: Creating service files in ${servicesDir.absolutePath}"
-    )
+    debugLogger?.log("Creating service files in ${servicesDir.absolutePath}")
 
     // Even if no providers were compiled this round, we still need to validate
     // existing service files to handle file deletions in incremental builds.
@@ -135,12 +134,7 @@ internal class ServiceRegistry(
           
           allImplementations.addAll(entriesToKeep)
           
-          if (debug) {
-            diagnosticReporter.report(
-              AutoServiceIrDiagnostics.INFO,
-              "Existing entries: $existingEntries, Compiled classes: $compiledClasses, Keeping: $entriesToKeep"
-            )
-          }
+          debugLogger?.log("Existing entries: $existingEntries, Compiled classes: $compiledClasses, Keeping: $entriesToKeep")
         } catch (e: Exception) {
           diagnosticReporter.report(
             AutoServiceIrDiagnostics.WARNING,
@@ -149,34 +143,19 @@ internal class ServiceRegistry(
         }
       }
       
-      if (debug) {
-        diagnosticReporter.report(
-          AutoServiceIrDiagnostics.INFO,
-          "Writing service file: ${serviceFile.absolutePath}"
-        )
-      }
+      debugLogger?.log("Writing service file: ${serviceFile.absolutePath}")
 
       try {
         if (allImplementations.isEmpty()) {
           // Remove service file if no implementations remain
           if (serviceFile.exists()) {
             serviceFile.delete()
-            if (debug) {
-              diagnosticReporter.report(
-                AutoServiceIrDiagnostics.INFO,
-                "Deleted empty service file: ${serviceFile.absolutePath}"
-              )
-            }
+            debugLogger?.log("Deleted empty service file: ${serviceFile.absolutePath}")
           }
         } else {
           serviceFile.writeText(allImplementations.sorted().joinToString("\n") + "\n")
           
-          if (debug) {
-            diagnosticReporter.report(
-              AutoServiceIrDiagnostics.INFO,
-              "Service file contents for $serviceInterface: ${allImplementations.sorted()}"
-            )
-          }
+          debugLogger?.log("Service file contents for $serviceInterface: ${allImplementations.sorted()}")
         }
       } catch (e: Exception) {
         diagnosticReporter.report(
@@ -188,8 +167,9 @@ internal class ServiceRegistry(
   }
 
   private fun getOutputDirectory(): File? {
-    // Try to get the output directory from system properties or environment
-    // This is where compiled classes go, and we want META-INF/services next to them
+    // The output directory should be provided by the Gradle plugin via the outputDirPath parameter.
+    // These fallbacks are primarily for testing scenarios (e.g., kotlin-compile-testing).
+    // In production use with Gradle, outputDirPath should always be set.
     val outputPath = System.getProperty("kotlin.output.dir")
       ?: System.getProperty("kotlin.compiler.output.path")
       ?: System.getProperty("org.jetbrains.kotlin.compiler.output.path")
@@ -198,13 +178,19 @@ internal class ServiceRegistry(
       return File(outputPath)
     }
     
-    // Fallback: use user.dir/build/classes/kotlin/main
+    // Last resort fallback - this path may not be correct for all project configurations.
+    // If you see this warning, ensure the AutoService Gradle plugin is properly configured.
     val userDir = System.getProperty("user.dir")
-    return if (userDir != null) {
-      File(userDir, "build/classes/kotlin/main")
-    } else {
-      null
+    if (userDir != null) {
+      diagnosticReporter.report(
+        AutoServiceIrDiagnostics.WARNING,
+        "AutoService: Output directory not provided by Gradle plugin, falling back to default path. " +
+          "Ensure the 'com.fueledbycaffeine.autoservice' Gradle plugin is applied."
+      )
+      return File(userDir, "build/classes/kotlin/main")
     }
+    
+    return null
   }
 
   private fun doesClassExist(

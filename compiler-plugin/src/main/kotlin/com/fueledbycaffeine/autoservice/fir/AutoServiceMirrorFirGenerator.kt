@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Generates synthetic "mirror" declarations for classes annotated with @AutoService.
@@ -63,8 +64,8 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     )
   }
 
-  // Track mirror classes we need to generate
-  private val mirrorClassesToGenerate = mutableSetOf<ClassId>()
+  // Track mirror classes we need to generate (thread-safe for parallel compilation)
+  private val mirrorClassesToGenerate: MutableSet<ClassId> = ConcurrentHashMap.newKeySet()
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(autoServicePredicate)

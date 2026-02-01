@@ -1,9 +1,11 @@
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.fueledbycaffeine.autoservice.fir
 
-import com.fueledbycaffeine.autoservice.ir.AutoServiceComponentRegistrar
-import com.tschuchort.compiletesting.JvmCompilationResult
+import com.fueledbycaffeine.autoservice.TestCompilationUtils.compile
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -402,18 +404,5 @@ class AutoServiceFirCheckersTest {
     // Inner classes should work fine as long as they're public/internal
     assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode,
       "Inner class should succeed if public. Messages: ${result.messages}")
-  }
-
-  private fun compile(vararg sourceFiles: SourceFile): JvmCompilationResult {
-    return KotlinCompilation().apply {
-      sources = sourceFiles.asList()
-      compilerPluginRegistrars = listOf(AutoServiceComponentRegistrar())
-      System.setProperty("kotlin.output.dir", workingDir.absolutePath)
-      inheritClassPath = true
-      messageOutputStream = System.out
-      verbose = false
-    }.compile().also {
-      System.clearProperty("kotlin.output.dir")
-    }
   }
 }

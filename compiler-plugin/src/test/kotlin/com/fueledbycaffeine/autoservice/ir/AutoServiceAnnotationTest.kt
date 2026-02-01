@@ -1,8 +1,11 @@
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.fueledbycaffeine.autoservice.ir
 
-import com.tschuchort.compiletesting.JvmCompilationResult
+import com.fueledbycaffeine.autoservice.TestCompilationUtils.compile
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
@@ -177,18 +180,5 @@ class AutoServiceAnnotationTest {
     val content = serviceFile.readText()
     assertTrue(content.contains("test.OurImpl"), "Should contain our annotation usage")
     assertTrue(content.contains("test.GoogleImpl"), "Should contain Google's annotation usage")
-  }
-
-  private fun compile(vararg sourceFiles: SourceFile): JvmCompilationResult {
-    return KotlinCompilation().apply {
-      sources = sourceFiles.asList()
-      compilerPluginRegistrars = listOf(AutoServiceComponentRegistrar())
-      System.setProperty("kotlin.output.dir", workingDir.absolutePath)
-      inheritClassPath = true
-      messageOutputStream = System.out
-      verbose = false
-    }.compile().also {
-      System.clearProperty("kotlin.output.dir")
-    }
   }
 }

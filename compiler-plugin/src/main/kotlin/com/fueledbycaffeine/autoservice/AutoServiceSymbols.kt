@@ -28,11 +28,6 @@ internal object AutoServiceSymbols {
      * Supported for backwards compatibility with existing codebases.
      */
     val GOOGLE_AUTOSERVICE: ClassId = ClassId.topLevel(FqName("com.google.auto.service.AutoService"))
-
-    /**
-     * Kotlin's Suppress annotation for suppressing AutoService warnings.
-     */
-    val SUPPRESS: ClassId = ClassId.topLevel(FqName("kotlin.Suppress"))
   }
 
   /**

@@ -14,17 +14,18 @@ internal class AutoServiceIrGenerationExtension(
   @OptIn(UnsafeDuringIrConstructionAPI::class)
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
     val diagnosticReporter = pluginContext.diagnosticReporter
+    val debugLogger = if (debug) AutoServiceDebugLogger(outputDir) else null
     
     // Use the use {} pattern to ensure service files are generated after all IR transformations.
     // This acts as a post-transformation hook - when the block completes, close() is called
     // which writes all collected service registrations to META-INF/services files.
-    ServiceRegistry(diagnosticReporter, debug, outputDir).use { serviceRegistry ->
+    ServiceRegistry(diagnosticReporter, debugLogger, outputDir).use { serviceRegistry ->
       val autoServiceVisitor =
         AutoServiceIrVisitor(
           pluginContext,
           diagnosticReporter,
           serviceRegistry,
-          debug,
+          debugLogger,
           projectRoot,
         )
       moduleFragment.accept(autoServiceVisitor, null)

@@ -1,5 +1,6 @@
 package com.fueledbycaffeine.autoservice.ir
 
+import com.fueledbycaffeine.autoservice.AutoServiceSymbols
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrDiagnosticReporter
 import org.jetbrains.kotlin.descriptors.Modality
@@ -24,10 +25,6 @@ import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-
-private val GOOGLE_AUTO_SERVICE_ANNOTATION = FqName("com.google.auto.service.AutoService")
-private val AUTOSERVICE_ANNOTATION = FqName("com.fueledbycaffeine.autoservice.AutoService")
-private val SUPPRESS_WARNINGS_ANNOTATION = FqName("kotlin.Suppress")
 
 /**
  * Convert a ClassId to its JVM binary class name.
@@ -58,7 +55,7 @@ internal class AutoServiceIrVisitor(
   private val pluginContext: IrPluginContext,
   private val diagnosticReporter: IrDiagnosticReporter,
   private val serviceRegistry: ServiceRegistry,
-  private val debug: Boolean,
+  private val debugLogger: AutoServiceDebugLogger?,
   private val projectRoot: String?,
 ) : IrVisitorVoid() {
 
@@ -83,7 +80,7 @@ internal class AutoServiceIrVisitor(
     
     // Get line and column numbers for proper IDE integration
     // Format: /absolute/path/file.kt:line:column (IDE standard format)
-    return if (startOffset >= 0 && irFile != null) {
+    return if (startOffset >= 0) {
       val sourceRangeInfo = irFile.fileEntry.getSourceRangeInfo(startOffset, endOffset)
       val line = sourceRangeInfo.startLineNumber + 1  // +1 because lines are 0-indexed
       val column = sourceRangeInfo.startColumnNumber + 1  // +1 because columns are 0-indexed
@@ -104,23 +101,20 @@ internal class AutoServiceIrVisitor(
     }
 
     // Check for either our annotation or Google's
-    val annotation = declaration.getAnnotation(AUTOSERVICE_ANNOTATION)
-      ?: declaration.getAnnotation(GOOGLE_AUTO_SERVICE_ANNOTATION)
+    val annotation = declaration.getAnnotation(AutoServiceSymbols.FqNames.AUTOSERVICE)
+      ?: declaration.getAnnotation(AutoServiceSymbols.FqNames.GOOGLE_AUTOSERVICE)
       
     if (annotation == null) {
       return
     }
 
-    if (debug) {
-      val annotationName = if (declaration.hasAnnotation(AUTOSERVICE_ANNOTATION)) {
-        "com.fueledbycaffeine.autoservice.AutoService"
+    debugLogger?.let {
+      val annotationName = if (declaration.hasAnnotation(AutoServiceSymbols.FqNames.AUTOSERVICE)) {
+        AutoServiceSymbols.FqNames.AUTOSERVICE.asString()
       } else {
-        "com.google.auto.service.AutoService"
+        AutoServiceSymbols.FqNames.GOOGLE_AUTOSERVICE.asString()
       }
-      diagnosticReporter.report(
-        AutoServiceIrDiagnostics.INFO,
-        "${declaration.locationString()} AutoService IR: Processing @$annotationName on class: ${declaration.fqNameWhenAvailable}"
-      )
+      it.log("${declaration.locationString()} Processing @$annotationName on class: ${declaration.fqNameWhenAvailable}")
     }
 
     val serviceInterfaces = extractServiceInterfaces(annotation, declaration)
@@ -136,36 +130,30 @@ internal class AutoServiceIrVisitor(
     val providerClass = declaration.jvmBinaryName() ?: run {
       diagnosticReporter.report(
         AutoServiceIrDiagnostics.ERROR,
-        "${declaration.locationString()} Could not determine class name for @AutoService target"
+        "${declaration.locationString()} Could not determine JVM binary class name for @AutoService target '${declaration.fqNameWhenAvailable}'. " +
+          "This may indicate a compiler issue with local or anonymous classes."
       )
       return
     }
 
     for (serviceInterface in serviceInterfaces) {
-      if (!hasSuppressWarning(declaration, "AutoService")) {
-        if (!checkImplements(declaration, serviceInterface)) {
-          diagnosticReporter.report(
-            AutoServiceIrDiagnostics.ERROR,
-            "${declaration.locationString()} @AutoService class does not implement $serviceInterface"
-          )
-          continue
-        }
-
-        if (declaration.modality == Modality.ABSTRACT) {
-          diagnosticReporter.report(
-            AutoServiceIrDiagnostics.ERROR,
-            "${declaration.locationString()} @AutoService cannot be applied to an abstract class"
-          )
-          continue
-        }
-      }
-
-      if (debug) {
+      if (!checkImplements(declaration, serviceInterface)) {
         diagnosticReporter.report(
-          AutoServiceIrDiagnostics.INFO,
-          "${declaration.locationString()} AutoService IR: Registering service: $serviceInterface -> $providerClass"
+          AutoServiceIrDiagnostics.ERROR,
+          "${declaration.locationString()} @AutoService class '${declaration.fqNameWhenAvailable}' does not implement $serviceInterface"
         )
+        continue
       }
+
+      if (declaration.modality == Modality.ABSTRACT) {
+        diagnosticReporter.report(
+          AutoServiceIrDiagnostics.ERROR,
+          "${declaration.locationString()} @AutoService cannot be applied to abstract class '${declaration.fqNameWhenAvailable}'"
+        )
+        continue
+      }
+
+      debugLogger?.log("${declaration.locationString()} Registering service: $serviceInterface -> $providerClass")
 
       serviceRegistry.register(serviceInterface, providerClass)
     }
@@ -189,12 +177,7 @@ internal class AutoServiceIrVisitor(
     if (explicitInterfaces.isEmpty()) {
       val inferredInterfaces = inferServiceInterfaces(declaration)
       if (inferredInterfaces.isNotEmpty()) {
-        if (debug) {
-          diagnosticReporter.report(
-            AutoServiceIrDiagnostics.INFO,
-            "${declaration.locationString()} AutoService IR: Inferred service interface(s) ${inferredInterfaces.joinToString()} for ${declaration.fqNameWhenAvailable}"
-          )
-        }
+        debugLogger?.log("${declaration.locationString()} Inferred service interface(s) ${inferredInterfaces.joinToString()} for ${declaration.fqNameWhenAvailable}")
         return inferredInterfaces
       }
     }
@@ -218,21 +201,11 @@ internal class AutoServiceIrVisitor(
     return when {
       supertypes.size == 1 -> supertypes
       supertypes.isEmpty() -> {
-        if (debug) {
-          diagnosticReporter.report(
-            AutoServiceIrDiagnostics.INFO,
-            "${declaration.locationString()} AutoService IR: Class ${declaration.fqNameWhenAvailable} has no supertypes to infer service interface from"
-          )
-        }
+        debugLogger?.log("${declaration.locationString()} Class ${declaration.fqNameWhenAvailable} has no supertypes to infer service interface from")
         emptyList()
       }
       else -> {
-        if (debug) {
-          diagnosticReporter.report(
-            AutoServiceIrDiagnostics.INFO,
-            "${declaration.locationString()} AutoService IR: Class ${declaration.fqNameWhenAvailable} has multiple supertypes (${supertypes.joinToString()}), cannot infer service interface"
-          )
-        }
+        debugLogger?.log("${declaration.locationString()} Class ${declaration.fqNameWhenAvailable} has multiple supertypes (${supertypes.joinToString()}), cannot infer service interface")
         emptyList()
       }
     }
@@ -265,36 +238,5 @@ internal class AutoServiceIrVisitor(
     val serviceClass = pluginContext.referenceClass(classId)?.owner ?: return false
 
     return declaration.isSubclassOf(serviceClass)
-  }
-
-  private fun hasSuppressWarning(declaration: IrClass, warning: String): Boolean {
-    var current: IrClass? = declaration
-    while (current != null) {
-      val suppressAnnotation = current.getAnnotation(SUPPRESS_WARNINGS_ANNOTATION)
-      if (suppressAnnotation != null) {
-        val suppressedWarnings = extractSuppressedWarnings(suppressAnnotation)
-        if (warning in suppressedWarnings) {
-          return true
-        }
-      }
-      current = current.parent as? IrClass
-    }
-    return false
-  }
-
-  private fun extractSuppressedWarnings(annotation: IrConstructorCall): List<String> {
-    val valueArgument = annotation.nonDispatchArguments.firstOrNull() ?: return emptyList()
-    
-    return when (valueArgument) {
-      is IrVararg -> {
-        valueArgument.elements.mapNotNull { element ->
-          (element as? IrConst)?.value as? String
-        }
-      }
-      is IrConst -> {
-        (valueArgument.value as? String)?.let { listOf(it) } ?: emptyList()
-      }
-      else -> emptyList()
-    }
   }
 }

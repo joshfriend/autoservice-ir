@@ -45,6 +45,11 @@ dependencyAnalysis {
   }
 }
 
+val main by sourceSets.getting
+val functionalTest by sourceSets.getting {
+  compileClasspath += main.output + configurations["testRuntimeClasspath"]
+  runtimeClasspath += output + compileClasspath
+}
 
 dependencies {
   api(libs.kotlin.gradlePluginApi)

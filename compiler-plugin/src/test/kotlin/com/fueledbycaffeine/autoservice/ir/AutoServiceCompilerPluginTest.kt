@@ -1,9 +1,11 @@
+@file:OptIn(ExperimentalCompilerApi::class)
+
 package com.fueledbycaffeine.autoservice.ir
 
-import com.tschuchort.compiletesting.JvmCompilationResult
+import com.fueledbycaffeine.autoservice.TestCompilationUtils.compile
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
@@ -186,19 +188,4 @@ class AutoServiceCompilerPluginTest {
     assertTrue(serviceFileA.readText().contains("test.MultiServiceImpl"))
     assertTrue(serviceFileB.readText().contains("test.MultiServiceImpl"))
   }
-
-  private fun compile(vararg sourceFiles: SourceFile): JvmCompilationResult {
-    return KotlinCompilation().apply {
-      sources = sourceFiles.asList()
-      compilerPluginRegistrars = listOf(AutoServiceComponentRegistrar())
-      // Set kotlin.output.dir system property so our plugin can find it
-      System.setProperty("kotlin.output.dir", workingDir.absolutePath)
-      inheritClassPath = true
-      messageOutputStream = System.out
-      verbose = false
-    }.compile().also {
-      System.clearProperty("kotlin.output.dir")
-    }
-  }
 }
-
