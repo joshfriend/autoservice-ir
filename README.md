@@ -8,7 +8,7 @@ A Kotlin compiler plugin implementation of Google's AutoService annotation proce
 - **K2 Compiler Support**: Fully compatible with Kotlin 2.0+ (K2 compiler) using both FIR and IR
 - **FIR and IR-based**: Leverages Kotlin's modern compiler plugin infrastructure which is faster than KSP/Kapt
 - **Drop-in replacement**: Can replace KSP or KAPT-based AutoService processing
-- **ProGuard/R8 rules generation**: Automatically generates keep rules to preserve service implementations during minification
+- **ProGuard/R8 rules**: Includes keep rules to preserve service implementations during minification
 
 ## Installation
 Add the AutoService Gradle plugin to your build configuration:
@@ -243,7 +243,6 @@ dependencies {
 | Compilation Speed            | 🚀 Fastest         | ⚡ Faster                            | 🐌 Slow                                 |
 | Setup Complexity             | ✅ Simple           | ⚠️ Medium                           | ⚠️ Medium                               |
 
-
 ## Configuration
 The plugin can be configured via the `autoService` extension in your build file:
 
@@ -256,8 +255,16 @@ autoService {
 
 You can also use a Gradle property to enable this (`autoservice.debug=true`).
 
+When you compile, you'll see output like:
+```
+AutoService IR: Processing @AutoService on class: com.example.MyServiceImpl
+AutoService IR: Inferred service interface MyService for com.example.MyServiceImpl
+AutoService IR: Registering service: com.example.MyService -> com.example.MyServiceImpl
+AutoService: Creating service files in /path/to/build/classes/kotlin/main/META-INF/services
+```
+
 ### ProGuard/R8 Support
-The plugin automatically supports ProGuard and R8 minification through **annotation-based keep rules** bundled in the annotations artifact:
+The plugin automatically supports ProGuard and R8 minification through **annotation-based keep rules** bundled in the `annotations` artifact:
 
 ```proguard
 # Bundled in META-INF/proguard/autoservice-annotations.pro
@@ -271,17 +278,7 @@ The plugin automatically supports ProGuard and R8 minification through **annotat
 
 These rules automatically preserve any class annotated with `@AutoService` along with its no-argument constructor (required by `ServiceLoader`).
 
-This works automatically with Android's default ProGuard/R8 configuration, which consumes rules from `META-INF/proguard/` in dependencies. No additional configuration is needed.
-
-## Debugging
-
-When you compile, you'll see output like:
-```
-AutoService IR: Processing @AutoService on class: com.example.MyServiceImpl
-AutoService IR: Inferred service interface MyService for com.example.MyServiceImpl
-AutoService IR: Registering service: com.example.MyService -> com.example.MyServiceImpl
-AutoService: Creating service files in /path/to/build/classes/kotlin/main/META-INF/services
-```
+This works automatically with Android's default R8 configuration, which consumes rules from `META-INF/proguard/` in dependencies. No additional configuration is needed.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

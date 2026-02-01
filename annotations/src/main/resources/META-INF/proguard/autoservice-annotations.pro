@@ -2,9 +2,12 @@
 # These rules preserve any class annotated with @AutoService along with their
 # no-argument constructor, which is required by ServiceLoader.
 
-# Keep the annotations themselves so R8 can process annotation-based rules
--keep class com.fueledbycaffeine.autoservice.AutoService
--keep class com.google.auto.service.AutoService
+# Keep runtime-visible annotations so annotation-based rules work
+-keepattributes RuntimeVisibleAnnotations
+
+# Keep service descriptor files and update them when classes are renamed
+-adaptresourcefilenames META-INF/services/*
+-adaptresourcefilecontents META-INF/services/*
 
 # Keep classes annotated with our annotation
 -keep @com.fueledbycaffeine.autoservice.AutoService class * {
