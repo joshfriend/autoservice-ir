@@ -35,7 +35,7 @@ jobs:
     - name: Unit Tests
       run: ./gradlew test
 
-  build-health:
+  buildHealth:
     runs-on: ubuntu-latest
     permissions:
       contents: read
