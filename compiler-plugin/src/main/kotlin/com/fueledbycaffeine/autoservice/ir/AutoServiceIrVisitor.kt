@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.ir.IrDiagnosticReporter
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
@@ -29,19 +30,27 @@ private val AUTOSERVICE_ANNOTATION = FqName("com.fueledbycaffeine.autoservice.Au
 private val SUPPRESS_WARNINGS_ANNOTATION = FqName("kotlin.Suppress")
 
 /**
- * Convert an IrClass to its JVM binary class name.
+ * Convert a ClassId to its JVM binary class name.
  * For nested classes, this uses '$' as the separator instead of '.'.
- * e.g., "com.example.Outer.Inner" becomes "com.example.Outer$Inner"
+ * e.g., ClassId for "com.example.Outer.Inner" becomes "com.example.Outer$Inner"
  */
-private fun IrClass.jvmBinaryName(): String? {
-  val classId = this.classId ?: return null
-  val packageFqName = classId.packageFqName.asString()
-  val relativeClassName = classId.relativeClassName.asString().replace('.', '$')
+internal fun ClassId.toJvmBinaryName(): String {
+  val packageFqName = packageFqName.asString()
+  val relativeClassName = relativeClassName.asString().replace('.', '$')
   return if (packageFqName.isEmpty()) {
     relativeClassName
   } else {
     "$packageFqName.$relativeClassName"
   }
+}
+
+/**
+ * Convert an IrClass to its JVM binary class name.
+ * For nested classes, this uses '$' as the separator instead of '.'.
+ * e.g., "com.example.Outer.Inner" becomes "com.example.Outer$Inner"
+ */
+private fun IrClass.jvmBinaryName(): String? {
+  return classId?.toJvmBinaryName()
 }
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
@@ -58,13 +67,30 @@ internal class AutoServiceIrVisitor(
   }
 
   private fun IrClass.locationString(): String {
-    val file = (parent as? IrFile)?.path ?: return fqNameWhenAvailable?.asString() ?: "<unknown>"
-    val displayPath = if (projectRoot != null && file.startsWith(projectRoot)) {
-      file.removePrefix(projectRoot).removePrefix("/")
+    // Find the containing IrFile by traversing up the parent chain
+    var current: IrElement? = this
+    var irFile: IrFile? = null
+    while (current != null) {
+      if (current is IrFile) {
+        irFile = current
+        break
+      }
+      current = (current as? IrDeclaration)?.parent
+    }
+    
+    // Use absolute path for IDE clickable links
+    val file = irFile?.path ?: return fqNameWhenAvailable?.asString() ?: "<unknown>"
+    
+    // Get line and column numbers for proper IDE integration
+    // Format: /absolute/path/file.kt:line:column (IDE standard format)
+    return if (startOffset >= 0 && irFile != null) {
+      val sourceRangeInfo = irFile.fileEntry.getSourceRangeInfo(startOffset, endOffset)
+      val line = sourceRangeInfo.startLineNumber + 1  // +1 because lines are 0-indexed
+      val column = sourceRangeInfo.startColumnNumber + 1  // +1 because columns are 0-indexed
+      "$file:$line:$column"
     } else {
       file
     }
-    return "$displayPath:$startOffset"
   }
 
   override fun visitClass(declaration: IrClass) {
@@ -93,7 +119,7 @@ internal class AutoServiceIrVisitor(
       }
       diagnosticReporter.report(
         AutoServiceIrDiagnostics.INFO,
-        "${declaration.locationString()}: AutoService IR: Processing @$annotationName on class: ${declaration.fqNameWhenAvailable}"
+        "${declaration.locationString()} AutoService IR: Processing @$annotationName on class: ${declaration.fqNameWhenAvailable}"
       )
     }
 
@@ -101,7 +127,8 @@ internal class AutoServiceIrVisitor(
     if (serviceInterfaces.isEmpty()) {
       diagnosticReporter.report(
         AutoServiceIrDiagnostics.ERROR,
-        "${declaration.locationString()}: No service interfaces provided for element! ${declaration.fqNameWhenAvailable}"
+        "${declaration.locationString()} @AutoService requires a service interface. " +
+          "Either specify it explicitly (e.g., @AutoService(MyInterface::class)) or ensure the class has exactly one supertype."
       )
       return
     }
@@ -109,7 +136,7 @@ internal class AutoServiceIrVisitor(
     val providerClass = declaration.jvmBinaryName() ?: run {
       diagnosticReporter.report(
         AutoServiceIrDiagnostics.ERROR,
-        "${declaration.locationString()}: Could not determine FQ name for ${declaration.name}"
+        "${declaration.locationString()} Could not determine class name for @AutoService target"
       )
       return
     }
@@ -119,8 +146,7 @@ internal class AutoServiceIrVisitor(
         if (!checkImplements(declaration, serviceInterface)) {
           diagnosticReporter.report(
             AutoServiceIrDiagnostics.ERROR,
-            "${declaration.locationString()}: ServiceProviders must implement their service provider interface. " +
-              "$providerClass does not implement $serviceInterface"
+            "${declaration.locationString()} @AutoService class does not implement $serviceInterface"
           )
           continue
         }
@@ -128,7 +154,7 @@ internal class AutoServiceIrVisitor(
         if (declaration.modality == Modality.ABSTRACT) {
           diagnosticReporter.report(
             AutoServiceIrDiagnostics.ERROR,
-            "${declaration.locationString()}: @AutoService can only be applied to a concrete class: $providerClass"
+            "${declaration.locationString()} @AutoService cannot be applied to an abstract class"
           )
           continue
         }
@@ -137,7 +163,7 @@ internal class AutoServiceIrVisitor(
       if (debug) {
         diagnosticReporter.report(
           AutoServiceIrDiagnostics.INFO,
-          "${declaration.locationString()}: AutoService IR: Registering service: $serviceInterface -> $providerClass"
+          "${declaration.locationString()} AutoService IR: Registering service: $serviceInterface -> $providerClass"
         )
       }
 
@@ -166,7 +192,7 @@ internal class AutoServiceIrVisitor(
         if (debug) {
           diagnosticReporter.report(
             AutoServiceIrDiagnostics.INFO,
-            "${declaration.locationString()}: AutoService IR: Inferred service interface(s) ${inferredInterfaces.joinToString()} for ${declaration.fqNameWhenAvailable}"
+            "${declaration.locationString()} AutoService IR: Inferred service interface(s) ${inferredInterfaces.joinToString()} for ${declaration.fqNameWhenAvailable}"
           )
         }
         return inferredInterfaces
@@ -195,7 +221,7 @@ internal class AutoServiceIrVisitor(
         if (debug) {
           diagnosticReporter.report(
             AutoServiceIrDiagnostics.INFO,
-            "${declaration.locationString()}: AutoService IR: Class ${declaration.fqNameWhenAvailable} has no supertypes to infer service interface from"
+            "${declaration.locationString()} AutoService IR: Class ${declaration.fqNameWhenAvailable} has no supertypes to infer service interface from"
           )
         }
         emptyList()
@@ -204,7 +230,7 @@ internal class AutoServiceIrVisitor(
         if (debug) {
           diagnosticReporter.report(
             AutoServiceIrDiagnostics.INFO,
-            "${declaration.locationString()}: AutoService IR: Class ${declaration.fqNameWhenAvailable} has multiple supertypes (${supertypes.joinToString()}), cannot infer service interface"
+            "${declaration.locationString()} AutoService IR: Class ${declaration.fqNameWhenAvailable} has multiple supertypes (${supertypes.joinToString()}), cannot infer service interface"
           )
         }
         emptyList()

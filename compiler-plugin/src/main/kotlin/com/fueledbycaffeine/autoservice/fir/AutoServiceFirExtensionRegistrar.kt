@@ -14,5 +14,7 @@ internal class AutoServiceFirExtensionRegistrar : FirExtensionRegistrar() {
   override fun ExtensionRegistrarContext.configurePlugin() {
     +::AutoServiceMirrorFirGenerator
     +::AutoServiceFirCheckersExtension
+
+    registerDiagnosticContainers(AutoServiceDiagnostics)
   }
 }

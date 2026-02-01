@@ -415,7 +415,8 @@ class IncrementalCompilationTest {
     // Build should fail with an error about missing service interfaces
     val secondBuild = project.buildAndFail("jar")
     assertThat(secondBuild).task(":compileKotlin").failed()
-    assertThat(secondBuild.output).contains("No service interfaces provided for element")
+    assertThat(secondBuild.output).contains("@AutoService on")
+    assertThat(secondBuild.output).contains("requires a service interface")
   }
 
   @Test

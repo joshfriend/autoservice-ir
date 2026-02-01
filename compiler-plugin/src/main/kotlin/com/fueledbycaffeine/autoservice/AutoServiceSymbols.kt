@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.name.Name
  * identifiers used throughout the plugin, avoiding string literals scattered
  * across the codebase.
  */
-@Suppress("unused") // Referenced throughout the compiler plugin
 internal object AutoServiceSymbols {
 
   /**

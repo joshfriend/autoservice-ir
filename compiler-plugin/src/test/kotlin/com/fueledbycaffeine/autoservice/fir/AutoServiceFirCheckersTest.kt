@@ -37,7 +37,7 @@ class AutoServiceFirCheckersTest {
 
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
     assertTrue(
-      result.messages.contains("@AutoService must be applied to a non-abstract class"),
+      result.messages.contains("@AutoService cannot be applied to an abstract class"),
       "Should report error for abstract class. Actual: ${result.messages}"
     )
   }
@@ -66,8 +66,8 @@ class AutoServiceFirCheckersTest {
 
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
     assertTrue(
-      result.messages.contains("@AutoService must be applied to a non-abstract class"),
-      "Should report error for abstract class with Google annotation"
+      result.messages.contains("@AutoService cannot be applied to an abstract class"),
+      "Should report error for abstract class with Google annotation. Actual: ${result.messages}"
     )
   }
 
@@ -123,7 +123,7 @@ class AutoServiceFirCheckersTest {
 
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
     assertTrue(
-      result.messages.contains("@AutoService must be applied to a non-abstract class"),
+      result.messages.contains("@AutoService cannot be applied to an interface"),
       "Should report error for interface. Actual: ${result.messages}"
     )
   }
@@ -153,7 +153,7 @@ class AutoServiceFirCheckersTest {
 
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
     assertTrue(
-      result.messages.contains("@AutoService must be applied to a non-abstract class"),
+      result.messages.contains("@AutoService cannot be applied to an enum class"),
       "Should report error for enum class. Actual: ${result.messages}"
     )
   }
@@ -176,7 +176,7 @@ class AutoServiceFirCheckersTest {
 
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
     assertTrue(
-      result.messages.contains("@AutoService must be applied to a non-abstract class"),
+      result.messages.contains("@AutoService cannot be applied to an annotation class"),
       "Should report error for annotation class. Actual: ${result.messages}"
     )
   }
@@ -205,7 +205,7 @@ class AutoServiceFirCheckersTest {
 
     assertEquals(KotlinCompilation.ExitCode.COMPILATION_ERROR, result.exitCode)
     assertTrue(
-      result.messages.contains("@AutoService must be applied to a non-abstract class"),
+      result.messages.contains("@AutoService cannot be applied to an object"),
       "Should report error for object. Actual: ${result.messages}"
     )
   }

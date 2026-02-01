@@ -10,13 +10,6 @@ import java.io.File
  * Supports incremental compilation by:
  * - Merging with existing service files
  * - Removing entries for classes that were compiled but no longer have @AutoService
- * 
- * Use the [use] method to ensure service files are generated after all IR transformations complete:
- * ```
- * serviceRegistry.use { visitor ->
- *   moduleFragment.accept(visitor, null)
- * }
- * ```
  */
 internal class ServiceRegistry(
   private val diagnosticReporter: IrDiagnosticReporter,
@@ -231,4 +224,5 @@ internal class ServiceRegistry(
       File(dir, classFilePath).exists()
     } ?: true
   }
+
 }
