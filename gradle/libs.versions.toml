@@ -1,6 +1,7 @@
 [versions]
 autoService = "1.1.1"
 binaryCompatibilityValidator = "0.17.0"
+develocity = "4.3.2"
 jdk = "21"
 jvmTarget = "17"
 kotlin = "2.3.0"

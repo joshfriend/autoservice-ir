@@ -3,6 +3,7 @@
 pluginManagement {
   includeBuild("build-logic")
   plugins {
+    id("com.gradle.develocity") version "4.3"
     id("com.gradle.plugin-publish") version "1.3.1"
     id("org.jetbrains.kotlin.jvm") version "2.3.0"
     id("com.autonomousapps.build-health") version "3.5.1"
@@ -18,10 +19,25 @@ pluginManagement {
 }
 
 plugins {
+  id("com.gradle.develocity")
   id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
   id("org.jetbrains.kotlin.jvm") apply false
   id("com.autonomousapps.build-health")
   id("com.autonomousapps.testkit") apply false
+}
+
+develocity {
+  buildScan {
+    publishing.onlyIf { true }
+    termsOfUseUrl = "https://gradle.com/terms-of-service"
+    termsOfUseAgree = "yes"
+
+    if (System.getenv("CI") != null) {
+      tag("CI")
+    } else {
+      tag("Local")
+    }
+  }
 }
 
 dependencyResolutionManagement {
