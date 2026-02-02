@@ -18,9 +18,3 @@
 -keep @com.google.auto.service.AutoService class * {
     <init>();
 }
-
-# Remove synthetic __AutoService__ mirror classes used for incremental compilation.
-# These classes are marked @Deprecated(level = HIDDEN) and serve no purpose at runtime.
--assumenosideeffects class **$__AutoService__ {
-    *;
-}

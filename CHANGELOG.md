@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+<<<<<<< HEAD
+=======
+### Changed
+- Remove mirror classes during IR generation
+
+>>>>>>> b6bec2a (Strip mirrors with IR)
 ## [0.1.0]
 
 ### Added
