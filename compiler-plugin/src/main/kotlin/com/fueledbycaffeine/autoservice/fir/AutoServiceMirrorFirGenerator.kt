@@ -5,6 +5,13 @@ import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
+import org.jetbrains.kotlin.fir.declarations.getDeprecationsProvider
+import org.jetbrains.kotlin.fir.expressions.FirAnnotation
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationArgumentMapping
+import org.jetbrains.kotlin.fir.expressions.builder.buildEnumEntryDeserializedAccessExpression
+import org.jetbrains.kotlin.fir.expressions.builder.buildLiteralExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
@@ -12,16 +19,23 @@ import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
 import org.jetbrains.kotlin.fir.plugin.createDefaultPrivateConstructor
 import org.jetbrains.kotlin.fir.plugin.createNestedClass
+import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.FirTypeRef
+import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
+import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
+import org.jetbrains.kotlin.fir.types.toLookupTag
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
+import org.jetbrains.kotlin.name.StandardClassIds
+import org.jetbrains.kotlin.types.ConstantValueKind
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -99,7 +113,7 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     return createNestedClass(owner, name, Key) {
       modality = Modality.FINAL
       visibility = Visibilities.Private
-    }.symbol
+    }.apply { markAsDeprecatedHidden() }.symbol
   }
 
   override fun getCallableNamesForClass(
@@ -128,5 +142,45 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     val classId = typeRef.coneType.classId ?: return false
     return classId == AutoServiceSymbols.ClassIds.AUTOSERVICE ||
       classId == AutoServiceSymbols.ClassIds.GOOGLE_AUTOSERVICE
+  }
+
+  /**
+   * Creates a @Deprecated(message = "...", level = DeprecationLevel.HIDDEN) annotation.
+   * This hides the mirror class from the FIR generated code that is shown in the IDE.
+   * Another genius strategy I stole from Metro.
+   */
+  private fun createDeprecatedHiddenAnnotation(): FirAnnotation {
+    val deprecatedClassSymbol = session.symbolProvider
+      .getClassLikeSymbolByClassId(StandardClassIds.Annotations.Deprecated) as FirRegularClassSymbol
+    
+    val deprecatedType = ConeClassLikeTypeImpl(
+      deprecatedClassSymbol.toLookupTag(),
+      emptyArray(),
+      isMarkedNullable = false,
+    )
+
+    return buildAnnotation {
+      annotationTypeRef = buildResolvedTypeRef { coneType = deprecatedType }
+      argumentMapping = buildAnnotationArgumentMapping {
+        mapping[Name.identifier("message")] = buildLiteralExpression(
+          source = null,
+          kind = ConstantValueKind.String,
+          value = "Hides the ${AutoServiceSymbols.Names.MIRROR_CLASS} class generated for @AutoService incremental compilation support",
+          setType = true,
+        )
+        mapping[Name.identifier("level")] = buildEnumEntryDeserializedAccessExpression {
+          enumClassId = StandardClassIds.DeprecationLevel
+          enumEntryName = Name.identifier("HIDDEN")
+        }
+      }
+    }
+  }
+
+  /**
+   * Marks the declaration as @Deprecated with HIDDEN level.
+   */
+  private fun FirClassLikeDeclaration.markAsDeprecatedHidden() {
+    replaceAnnotations(annotations + listOf(createDeprecatedHiddenAnnotation()))
+    replaceDeprecationsProvider(getDeprecationsProvider(session))
   }
 }
