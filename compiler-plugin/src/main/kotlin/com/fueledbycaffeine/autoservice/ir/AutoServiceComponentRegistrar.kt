@@ -4,7 +4,10 @@ import com.fueledbycaffeine.autoservice.fir.AutoServiceFirExtensionRegistrar
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
+import java.io.File
+import java.nio.file.Path
 
 /**
  * Registers the AutoService compiler extensions.
@@ -22,16 +25,22 @@ public class AutoServiceComponentRegistrar : CompilerPluginRegistrar() {
   override val supportsK2: Boolean = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    val debug = configuration[KEY_DEBUG] == true
-    val outputDir = configuration[KEY_OUTPUT_DIR]
-    val projectRoot = configuration[KEY_PROJECT_ROOT]
+    // Try to get output directory from configuration (set by Gradle plugin)
+    val outputDir = configuration[KEY_OUTPUT_DIR]?.let {
+      Path.of(it)
+    } ?: run {
+      // Fallback for testing scenarios
+      configuration.get(JVMConfigurationKeys.OUTPUT_DIRECTORY)?.toPath()
+        ?: error("Output directory not specified")
+    }
+    val debugLogDir = configuration[KEY_DEBUG_LOG_DIR]?.let { Path.of(it) }
 
     // Register FIR extension for IC support via synthetic mirror declarations
     FirExtensionRegistrarAdapter.registerExtension(AutoServiceFirExtensionRegistrar())
 
     // Register IR extension for service file generation
     IrGenerationExtension.registerExtension(
-      AutoServiceIrGenerationExtension(debug, outputDir, projectRoot)
+      AutoServiceIrGenerationExtension(outputDir, debugLogDir)
     )
   }
 }

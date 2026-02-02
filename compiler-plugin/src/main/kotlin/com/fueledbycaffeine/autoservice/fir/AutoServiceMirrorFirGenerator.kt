@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.name.ClassId
@@ -40,21 +40,20 @@ import java.util.concurrent.ConcurrentHashMap
  * We generate:
  * ```
  * class MyServiceImpl {
- *   private class `__AutoService__` { }
+ *   private class __AutoService__ { }
  * }
  * ```
  * 
- * The mirror class existence triggers IC tracking, so when the source file
- * is deleted, the mirror class deletion triggers proper cleanup.
+ * The mirror class exists purely for incremental compilation tracking:
+ * - When source files are deleted, the mirror is deleted, triggering recompilation
+ * - FIR validates all @AutoService annotations during compilation
+ * - IR extracts service interfaces directly from annotations (trusting FIR's validation)
  */
 internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarationGenerationExtension(session) {
-
-  // Generated declaration key for our plugin
   internal object Key : GeneratedDeclarationKey() {
     override fun toString() = "AutoServiceMirror"
   }
 
-  // Predicate to match @AutoService annotated classes
   private val autoServicePredicate = LookupPredicate.create {
     annotated(
       setOf(
@@ -76,19 +75,17 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     classSymbol: FirClassSymbol<*>,
     context: NestedClassGenerationContext,
   ): Set<Name> {
-    // Check if this class has @AutoService annotation
-    // During this phase, annotations may not be resolved yet, so we need to handle both cases
-    val hasAutoServiceAnnotation = classSymbol.fir.annotations.any { annotation ->
+    val annotation = classSymbol.fir.annotations.firstOrNull { annotation ->
       isAutoServiceAnnotation(annotation.annotationTypeRef)
     }
     
-    if (!hasAutoServiceAnnotation) {
+    if (annotation == null) {
       return emptySet()
     }
 
     val mirrorClassId = classSymbol.classId.createNestedClassId(AutoServiceSymbols.Names.MIRROR_CLASS)
     mirrorClassesToGenerate.add(mirrorClassId)
-    
+
     return setOf(AutoServiceSymbols.Names.MIRROR_CLASS)
   }
 
@@ -98,9 +95,6 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     context: NestedClassGenerationContext,
   ): FirClassLikeSymbol<*>? {
     if (name != AutoServiceSymbols.Names.MIRROR_CLASS) return null
-
-    val mirrorClassId = owner.classId.createNestedClassId(name)
-    if (mirrorClassId !in mirrorClassesToGenerate) return null
 
     return createNestedClass(owner, name, Key) {
       modality = Modality.FINAL
@@ -114,7 +108,6 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
   ): Set<Name> {
     val classId = classSymbol.classId
     
-    // For mirror classes, generate only the constructor
     if (classId in mirrorClassesToGenerate) {
       return setOf(SpecialNames.INIT)
     }
@@ -123,20 +116,15 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
   }
 
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
-    if (context.owner.classId !in mirrorClassesToGenerate) {
+    if (context.owner.classId.shortClassName != AutoServiceSymbols.Names.MIRROR_CLASS) {
       return emptyList()
     }
     
     // Private constructor to prevent instantiation
     return listOf(createDefaultPrivateConstructor(context.owner, Key).symbol)
   }
-
-  /**
-   * Checks if the given type reference refers to an AutoService annotation.
-   */
-  private fun isAutoServiceAnnotation(typeRef: org.jetbrains.kotlin.fir.types.FirTypeRef): Boolean {
-    // By the time we're called, annotations should be resolved since our predicate already matched
-    if (typeRef !is FirResolvedTypeRef) return false
+  
+  private fun isAutoServiceAnnotation(typeRef: FirTypeRef): Boolean {
     val classId = typeRef.coneType.classId ?: return false
     return classId == AutoServiceSymbols.ClassIds.AUTOSERVICE ||
       classId == AutoServiceSymbols.ClassIds.GOOGLE_AUTOSERVICE

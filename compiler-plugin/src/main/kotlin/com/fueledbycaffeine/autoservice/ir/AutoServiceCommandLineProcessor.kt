@@ -6,12 +6,10 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 
-internal val KEY_DEBUG =
-  CompilerConfigurationKey<Boolean>("Enable/disable debug logging on the given compilation")
 internal val KEY_OUTPUT_DIR =
   CompilerConfigurationKey<String>("Output directory for generated service files")
-internal val KEY_PROJECT_ROOT =
-  CompilerConfigurationKey<String>("Project root directory for relative path display")
+internal val KEY_DEBUG_LOG_DIR =
+  CompilerConfigurationKey<String>("Output directory for debug log files (enables debugging if set)")
 
 /**
  * Processes command line options for the AutoService compiler plugin.
@@ -22,7 +20,7 @@ internal val KEY_PROJECT_ROOT =
  * ## Usage
  * 
  * These constants are primarily used by:
- * - The [AutoServiceGradlePlugin][com.fueledbycaffeine.autoservice.gradle.AutoServiceGradlePlugin] 
+ * - The [AutoServiceGradlePlugin][com.fueledbycaffeine.autoservice.gradle.AutoServiceGradlePlugin]
  *   to pass options to the compiler
  * - Custom build tool integrations that need to invoke the compiler plugin directly
  * 
@@ -39,18 +37,6 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
     public const val PLUGIN_ID: String = "com.fueledbycaffeine.autoservice.compiler"
     
     /**
-     * Option name for enabling debug logging.
-     * 
-     * When enabled, the plugin outputs detailed information about:
-     * - Which classes are being processed
-     * - Inferred service interfaces
-     * - Service file generation
-     * 
-     * Value: `"true"` or `"false"` (default: `"false"`)
-     */
-    public const val OPTION_NAME_DEBUG: String = "debug"
-    
-    /**
      * Option name for specifying the output directory for generated service files.
      * 
      * This should be the classes output directory where `META-INF/services` will be created.
@@ -61,22 +47,21 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
     public const val OPTION_NAME_OUTPUT_DIR: String = "outputDir"
     
     /**
-     * Option name for specifying the project root directory.
+     * Option name for specifying the output directory for debug log files.
      * 
-     * Used for displaying relative paths in error messages for better IDE integration.
+     * When set, enables debug logging for the plugin.
+     * Debug logs include detailed information about:
+     * - Which classes are being processed
+     * - Inferred service interfaces
+     * - Service file generation
      * 
-     * Value: Absolute path to the project root
+     * This should be a dedicated directory in the project's build folder.
+     * The Gradle plugin automatically sets this to a subdirectory of the build directory.
+     * 
+     * Value: Absolute path to the debug log directory (or omit to disable debugging)
      */
-    public const val OPTION_NAME_PROJECT_ROOT: String = "projectRoot"
-    
-    internal val OPTION_DEBUG =
-      CliOption(
-        optionName = OPTION_NAME_DEBUG,
-        valueDescription = "<true | false>",
-        description = KEY_DEBUG.toString(),
-        required = false,
-        allowMultipleOccurrences = false,
-      )
+    public const val OPTION_NAME_DEBUG_LOG_DIR: String = "debugLogDir"
+
     internal val OPTION_OUTPUT_DIR =
       CliOption(
         optionName = OPTION_NAME_OUTPUT_DIR,
@@ -85,11 +70,11 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
         required = false,
         allowMultipleOccurrences = false,
       )
-    internal val OPTION_PROJECT_ROOT =
+    internal val OPTION_DEBUG_LOG_DIR =
       CliOption(
-        optionName = OPTION_NAME_PROJECT_ROOT,
+        optionName = OPTION_NAME_DEBUG_LOG_DIR,
         valueDescription = "String",
-        description = KEY_PROJECT_ROOT.toString(),
+        description = KEY_DEBUG_LOG_DIR.toString(),
         required = false,
         allowMultipleOccurrences = false,
       )
@@ -98,7 +83,7 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
   override val pluginId: String = PLUGIN_ID
 
   override val pluginOptions: Collection<AbstractCliOption> =
-    listOf(OPTION_DEBUG, OPTION_OUTPUT_DIR, OPTION_PROJECT_ROOT)
+    listOf(OPTION_OUTPUT_DIR, OPTION_DEBUG_LOG_DIR)
 
   override fun processOption(
     option: AbstractCliOption,
@@ -106,9 +91,8 @@ public class AutoServiceCommandLineProcessor : CommandLineProcessor {
     configuration: CompilerConfiguration,
   ): Unit =
     when (option.optionName) {
-      OPTION_NAME_DEBUG -> configuration.put(KEY_DEBUG, value.toBoolean())
       OPTION_NAME_OUTPUT_DIR -> configuration.put(KEY_OUTPUT_DIR, value)
-      OPTION_NAME_PROJECT_ROOT -> configuration.put(KEY_PROJECT_ROOT, value)
+      OPTION_NAME_DEBUG_LOG_DIR -> configuration.put(KEY_DEBUG_LOG_DIR, value)
       else -> error("Unknown plugin option: ${option.optionName}")
     }
 }

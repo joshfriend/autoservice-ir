@@ -236,12 +236,14 @@ dependencies {
 |------------------------------|--------------------|-------------------------------------|-----------------------------------------|
 | K2 Support                   | ✅ Yes (Native)     | ✅ Yes                               | ❌ No                                    |
 | Type Inference               | ✅ Yes              | ❌ No                                | ❌ No                                    |
-| Service file merging         | ✅ Yes              | ❌ No                                | ✅ Yes                                   |
+| Service file merging¹        | ✅ Yes              | ❌ No                                | ✅ Yes                                   |
 | ProGuard/R8 rules            | ✅ Included         | ❌ Manual                            | ❌ Manual                                |
 | Incremental compilation      | ✅ Full support     | ⚠️ Isolating only                   | ⚠️ Aggregating only                     |
 | Real-time IDE error checking | ✅ Yes (FIR)        | ❌ Build required                    | ❌ Build required                        |
 | Compilation Speed            | 🚀 Fastest         | ⚡ Faster                            | 🐌 Slow                                 |
 | Setup Complexity             | ✅ Simple           | ⚠️ Medium                           | ⚠️ Medium                               |
+
+¹ **Service file merging**: Intelligently merges new service implementations with existing entries from previous compilations, preserving implementations from unchanged files while removing deleted ones. Critical for incremental builds.
 
 ## Configuration
 The plugin can be configured via the `autoService` extension in your build file:
@@ -255,12 +257,15 @@ autoService {
 
 You can also use a Gradle property to enable this (`autoservice.debug=true`).
 
-When you compile, you'll see output like:
+When debug logging is enabled, the plugin writes detailed information to `build/autoservice-logs/autoservice-debug.log`:
 ```
-AutoService IR: Processing @AutoService on class: com.example.MyServiceImpl
-AutoService IR: Inferred service interface MyService for com.example.MyServiceImpl
-AutoService IR: Registering service: com.example.MyService -> com.example.MyServiceImpl
-AutoService: Creating service files in /path/to/build/classes/kotlin/main/META-INF/services
+AutoService Debug Log
+==================================================
+Processing @AutoService on class: com.example.MyServiceImpl
+Inferred service interface MyService for com.example.MyServiceImpl
+Registering service: com.example.MyService -> com.example.MyServiceImpl
+Writing service file: /path/to/build/classes/kotlin/main/META-INF/services/com.example.MyService
+Service file contents for com.example.MyService: [com.example.MyServiceImpl]
 ```
 
 ### ProGuard/R8 Support

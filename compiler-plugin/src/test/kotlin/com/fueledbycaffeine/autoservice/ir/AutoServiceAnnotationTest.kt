@@ -124,6 +124,11 @@ class AutoServiceAnnotationTest {
     
     val serviceFileA = File(result.outputDirectory, "META-INF/services/test.ServiceA")
     val serviceFileB = File(result.outputDirectory, "META-INF/services/test.ServiceB")
+
+    // put here:
+    // /var/folders/ym/4hx92pxd7zs8_2tn48xbq2vh0000gn/T/Kotlin-Compilation11057145510822032810/META-INF/services
+    // but test looks here
+    // /var/folders/ym/4hx92pxd7zs8_2tn48xbq2vh0000gn/T/Kotlin-Compilation11057145510822032810/classes/META-INF/services
     
     assertTrue(serviceFileA.exists())
     assertTrue(serviceFileB.exists())

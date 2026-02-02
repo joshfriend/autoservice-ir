@@ -4,6 +4,10 @@ import org.jetbrains.kotlin.backend.common.KtDefaultCommonBackendErrorMessages
 import org.jetbrains.kotlin.diagnostics.KtSourcelessDiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Severity
 import java.io.File
+import java.nio.file.Path
+import kotlin.io.path.appendText
+import kotlin.io.path.createParentDirectories
+import kotlin.io.path.writeText
 
 internal object AutoServiceIrDiagnostics {
   private val rendererFactory = KtDefaultCommonBackendErrorMessages
@@ -23,11 +27,10 @@ internal object AutoServiceIrDiagnostics {
 /**
  * Debug logger that writes to a file in the output directory.
  */
-internal class AutoServiceDebugLogger(outputDir: String?) {
-  private val logFile: File? = outputDir?.let { 
-    File(it, "autoservice-debug.log").also { file ->
-      file.parentFile?.mkdirs()
-      file.writeText("AutoService Debug Log\n" + "=".repeat(50) + "\n")
+internal class AutoServiceDebugLogger(outputDir: Path?) {
+  private val logFile: Path? = outputDir?.let {
+    it.resolve("autoservice.log").also { file ->
+      file.createParentDirectories()
     }
   }
   

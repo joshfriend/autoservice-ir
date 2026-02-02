@@ -46,5 +46,11 @@ internal object AutoServiceSymbols {
      * Name of the synthetic mirror class generated for incremental compilation support.
      */
     val MIRROR_CLASS: Name = Name.identifier("__AutoService__")
+    
+    /**
+     * Name of the synthetic property that stores resolved service interfaces.
+     * This is generated in FIR and consumed in IR.
+     */
+    val SERVICE_INTERFACES: Name = Name.identifier("__autoServiceInterfaces__")
   }
 }

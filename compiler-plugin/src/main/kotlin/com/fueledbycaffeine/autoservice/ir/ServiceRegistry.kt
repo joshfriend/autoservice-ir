@@ -2,7 +2,8 @@ package com.fueledbycaffeine.autoservice.ir
 
 import org.jetbrains.kotlin.ir.IrDiagnosticReporter
 import java.io.Closeable
-import java.io.File
+import java.nio.file.Path
+import kotlin.io.path.*
 
 /**
  * Registry for tracking service implementations and generating META-INF/services files.
@@ -17,17 +18,20 @@ import java.io.File
  *   moduleFragment.accept(visitor, null)
  * }
  * ```
+ * 
+ * Thread Safety: Uses regular collections since IrGenerationExtension.generate() is called
+ * sequentially per module in a single thread. No concurrent access is possible.
  */
 internal class ServiceRegistry(
   private val diagnosticReporter: IrDiagnosticReporter,
-  private val debugLogger: AutoServiceDebugLogger?,
-  private val outputDirPath: String?,
+  private val debugLogger: AutoServiceDebugLogger,
+  private val outputDir: Path,
 ) : Closeable {
-  private val providers = mutableMapOf<String, MutableSet<String>>()
-  private val compiledClasses = mutableSetOf<String>()
+  private val providers: MutableMap<String, MutableSet<String>> = mutableMapOf()
+  private val compiledClasses: MutableSet<String> = mutableSetOf()
   
   // All classes found in the module - used to validate service file entries
-  private val allModuleClasses = mutableSetOf<String>()
+  private val allModuleClasses: MutableSet<String> = mutableSetOf()
   
   /**
    * Track a class that exists in the module's IR.
@@ -57,158 +61,114 @@ internal class ServiceRegistry(
     // Don't return early even if providers is empty - we might need to clean up service files
     // for classes that were compiled but no longer have @AutoService
     
-    val outputDir = if (outputDirPath != null) {
-      File(outputDirPath)
-    } else {
-      getOutputDirectory()
-    }
-    
-    debugLogger?.log("Output dir path = $outputDirPath, resolved dir = ${outputDir?.absolutePath}")
-    
-    if (outputDir == null) {
-      diagnosticReporter.report(
-        AutoServiceIrDiagnostics.WARNING,
-        "Could not determine output directory for service files"
-      )
-      return
-    }
-
-    // Determine the correct location for META-INF/services
-    // If outputDirPath is provided (from Gradle plugin), use it directly
-    // Otherwise, check if we need to add a 'classes' subdirectory (kotlin-compile-testing case)
-    val servicesDir = if (outputDirPath != null) {
-      // Gradle plugin provides the classes directory directly
-      File(outputDir, "META-INF/services")
-    } else {
-      // kotlin-compile-testing or other uses - add classes subdir if needed
-      val classesDir = File(outputDir, "classes")
-      if (classesDir.exists() || outputDir.name != "classes") {
-        File(classesDir, "META-INF/services")
-      } else {
-        File(outputDir, "META-INF/services")
-      }
-    }
-    servicesDir.mkdirs()
-    
-    debugLogger?.log("Creating service files in ${servicesDir.absolutePath}")
+    // Gradle plugin provides the classes directory directly
+    val servicesDir = outputDir.resolve("META-INF/services")
+    servicesDir.createDirectories()
+    debugLogger.log("Creating service files in $servicesDir")
 
     // Even if no providers were compiled this round, we still need to validate
     // existing service files to handle file deletions in incremental builds.
     // Post-compilation cleanup: validate ALL service files at the end
     // This acts as a cleanup hook to remove stale entries even if we didn't compile those classes
-    val allServiceFiles = if (servicesDir.exists()) {
-      servicesDir.listFiles()?.filter { it.isFile } ?: emptyList()
-    } else {
-      emptyList()
+    val existingServiceFiles = when (servicesDir.exists()) {
+      true -> servicesDir.listDirectoryEntries().filter { it.isRegularFile() }.toSet()
+      else -> emptySet()
     }
-    val allServiceInterfaces = (providers.keys + allServiceFiles.map { it.name }).toSet()
+    val newServiceFiles = providers.keys.map { servicesDir.resolve(it) }
     
-    for (serviceInterface in allServiceInterfaces) {
-      val serviceFile = File(servicesDir, serviceInterface)
-      
-      // For incremental compilation: merge with existing service file entries
-      val allImplementations = sortedSetOf<String>()
-      
-      // Add new implementations from this compilation
-      providers[serviceInterface]?.let { allImplementations.addAll(it) }
-      
-      if (serviceFile.exists()) {
-        try {
-          val existingEntries = serviceFile.readLines()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() && !it.startsWith("#") }
-          
-          // Validate existing entries with aggressive cleanup:
-          // - If we compiled the class this round: trust only our current providers map
-          // - If we didn't compile it: validate it still exists (compiler + filesystem)
-          val entriesToKeep = existingEntries.filter { entry ->
-            if (compiledClasses.contains(entry)) {
-              // We compiled this class - only keep if it's still in providers
-              providers[serviceInterface]?.contains(entry) == true
-            } else {
-              // We didn't compile this class - validate it with both compiler and filesystem
-              // This catches deletions in incremental builds
-              doesClassExist(outputDir, entry)
-            }
-          }
-          
-          allImplementations.addAll(entriesToKeep)
-          
-          debugLogger?.log("Existing entries: $existingEntries, Compiled classes: $compiledClasses, Keeping: $entriesToKeep")
-        } catch (e: Exception) {
-          diagnosticReporter.report(
-            AutoServiceIrDiagnostics.WARNING,
-            "Failed to read existing service file ${serviceFile.absolutePath}: ${e.message}"
-          )
-        }
-      }
-      
-      debugLogger?.log("Writing service file: ${serviceFile.absolutePath}")
+    for (serviceFile in existingServiceFiles + newServiceFiles) {
+      val serviceInterface = serviceFile.name
+      val implementations = mergeServiceImplementations(serviceFile, serviceInterface)
+      writeServiceFile(serviceFile, serviceInterface, implementations)
+    }
+  }
 
+  private fun mergeServiceImplementations(serviceFile: Path, serviceInterface: String): Set<String> {
+    val allImplementations = sortedSetOf<String>()
+    
+    // Add new implementations from this compilation
+    providers[serviceInterface]?.let { allImplementations.addAll(it) }
+    
+    // Merge with existing entries if file exists
+    if (serviceFile.exists()) {
       try {
-        if (allImplementations.isEmpty()) {
-          // Remove service file if no implementations remain
-          if (serviceFile.exists()) {
-            serviceFile.delete()
-            debugLogger?.log("Deleted empty service file: ${serviceFile.absolutePath}")
-          }
-        } else {
-          serviceFile.writeText(allImplementations.sorted().joinToString("\n") + "\n")
-          
-          debugLogger?.log("Service file contents for $serviceInterface: ${allImplementations.sorted()}")
-        }
+        val existingEntries = readServiceFile(serviceFile)
+        val entriesToKeep = validateExistingEntries(existingEntries, serviceInterface)
+        allImplementations.addAll(entriesToKeep)
+        
+        debugLogger.log("Existing entries: $existingEntries, Compiled classes: $compiledClasses, Keeping: $entriesToKeep")
       } catch (e: Exception) {
         diagnosticReporter.report(
-          AutoServiceIrDiagnostics.ERROR,
-          "Failed to write service file ${serviceFile.absolutePath}: ${e.message}"
+          AutoServiceIrDiagnostics.WARNING,
+          "Failed to read existing service file $serviceFile: ${e.message}"
         )
       }
     }
+    
+    return allImplementations
   }
 
-  private fun getOutputDirectory(): File? {
-    // The output directory should be provided by the Gradle plugin via the outputDirPath parameter.
-    // These fallbacks are primarily for testing scenarios (e.g., kotlin-compile-testing).
-    // In production use with Gradle, outputDirPath should always be set.
-    val outputPath = System.getProperty("kotlin.output.dir")
-      ?: System.getProperty("kotlin.compiler.output.path")
-      ?: System.getProperty("org.jetbrains.kotlin.compiler.output.path")
-    
-    if (outputPath != null) {
-      return File(outputPath)
+  private fun validateExistingEntries(existingEntries: List<String>, serviceInterface: String): List<String> {
+    // Validate existing entries with aggressive cleanup:
+    // - If we compiled the class this round: trust only our current providers map
+    // - If we didn't compile it: validate it still exists (compiler + filesystem)
+    return existingEntries.filter { entry ->
+      if (compiledClasses.contains(entry)) {
+        // We compiled this class - only keep if it's still in providers
+        providers[serviceInterface]?.contains(entry) == true
+      } else {
+        // We didn't compile this class - validate it with both compiler and filesystem
+        // This catches deletions in incremental builds
+        doesClassExist(entry)
+      }
     }
+  }
+
+  private fun writeServiceFile(serviceFile: Path, serviceInterface: String, implementations: Set<String>) {
+    debugLogger.log("Writing service file: $serviceFile")
     
-    // Last resort fallback - this path may not be correct for all project configurations.
-    // If you see this warning, ensure the AutoService Gradle plugin is properly configured.
-    val userDir = System.getProperty("user.dir")
-    if (userDir != null) {
+    try {
+      if (implementations.isEmpty()) {
+        deleteServiceFileIfExists(serviceFile)
+        debugLogger.log("Deleted empty service file: $serviceFile")
+      } else {
+        serviceFile.writeText(implementations.sorted().joinToString("\n") + "\n")
+        debugLogger.log(
+          "Service file contents for $serviceInterface:\n" +
+            implementations.sorted().joinToString("\n")
+        )
+      }
+    } catch (e: Exception) {
       diagnosticReporter.report(
-        AutoServiceIrDiagnostics.WARNING,
-        "AutoService: Output directory not provided by Gradle plugin, falling back to default path. " +
-          "Ensure the 'com.fueledbycaffeine.autoservice' Gradle plugin is applied."
+        AutoServiceIrDiagnostics.ERROR,
+        "Failed to write service file $serviceFile: ${e.message}"
       )
-      return File(userDir, "build/classes/kotlin/main")
     }
-    
-    return null
   }
 
-  private fun doesClassExist(
-    outputDir: File?,
-    fullyQualifiedClassName: String,
-  ): Boolean {
+  private fun deleteServiceFileIfExists(serviceFile: Path) {
+    if (serviceFile.exists()) {
+      serviceFile.deleteExisting()
+      debugLogger.log("Deleted empty service file: $serviceFile")
+    }
+  }
+
+  private fun readServiceFile(serviceFile: Path): List<String> {
+    return serviceFile.readLines()
+      .map { it.trim() }
+      .filter { it.isNotEmpty() && !it.startsWith("#") }
+  }
+
+  private fun doesClassExist(fqcn: String): Boolean {
     // Phase 1: If the class is in the current module's IR, it definitely exists
-    if (fullyQualifiedClassName in allModuleClasses) {
+    if (fqcn in allModuleClasses) {
       return true
     }
     
     // Phase 2: Check if the class file exists
     // In incremental builds, unchanged files won't be in the module but their class files exist
     // When a source file is deleted, IC deletes the class file, so this returns false
-    return outputDir?.let { dir ->
-      val classFilePath = fullyQualifiedClassName.replace('.', '/') + ".class"
-      File(dir, classFilePath).exists()
-    } ?: true
+    val classFilePath = fqcn.replace('.', '/') + ".class"
+    return outputDir.resolve(classFilePath).exists()
   }
-
 }

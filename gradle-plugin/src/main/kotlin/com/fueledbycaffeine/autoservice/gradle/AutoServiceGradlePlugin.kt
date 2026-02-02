@@ -39,22 +39,19 @@ public class AutoServiceGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
     return project.provider {
       buildList {
-        add(SubpluginOption(
-          AutoServiceCommandLineProcessor.OPTION_NAME_DEBUG,
-          extension.debug.get().toString(),
-        ))
-
-        // Set output directory to the compilation's destination directory
+        // Set output directory for service files to the kotlin classes directory
         add(SubpluginOption(
           AutoServiceCommandLineProcessor.OPTION_NAME_OUTPUT_DIR,
           kotlinCompilation.defaultSourceSet.kotlin.classesDirectory.get().asFile.absolutePath,
         ))
 
-        // Pass project root for relative path display in error messages
-        add(SubpluginOption(
-          AutoServiceCommandLineProcessor.OPTION_NAME_PROJECT_ROOT,
-          project.rootDir.absolutePath,
-        ))
+        // Set debug log directory only if debugging is enabled
+        if (extension.debug.get()) {
+          add(SubpluginOption(
+            AutoServiceCommandLineProcessor.OPTION_NAME_DEBUG_LOG_DIR,
+            project.layout.buildDirectory.dir("autoservice").get().asFile.absolutePath,
+          ))
+        }
       }
     }
   }
