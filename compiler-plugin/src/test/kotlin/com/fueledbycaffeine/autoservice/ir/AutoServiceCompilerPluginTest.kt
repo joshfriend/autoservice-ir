@@ -20,7 +20,7 @@ class AutoServiceCompilerPluginTest {
         "TestService.kt",
         """
           package test
-          
+
           interface MyService {
             fun doSomething()
           }
@@ -30,9 +30,9 @@ class AutoServiceCompilerPluginTest {
         "TestServiceImpl.kt",
         """
           package test
-          
+
           import com.google.auto.service.AutoService
-          
+
           @AutoService(MyService::class)
           class MyServiceImpl : MyService {
             override fun doSomething() {
@@ -60,7 +60,7 @@ class AutoServiceCompilerPluginTest {
         "TestService.kt",
         """
           package test
-          
+
           interface MyService {
             fun doSomething()
           }
@@ -70,9 +70,9 @@ class AutoServiceCompilerPluginTest {
         "TestServiceImpl1.kt",
         """
           package test
-          
+
           import com.google.auto.service.AutoService
-          
+
           @AutoService(MyService::class)
           class MyServiceImpl1 : MyService {
             override fun doSomething() {}
@@ -83,9 +83,9 @@ class AutoServiceCompilerPluginTest {
         "TestServiceImpl2.kt",
         """
           package test
-          
+
           import com.google.auto.service.AutoService
-          
+
           @AutoService(MyService::class)
           class MyServiceImpl2 : MyService {
             override fun doSomething() {}
@@ -111,7 +111,7 @@ class AutoServiceCompilerPluginTest {
         "TestService.kt",
         """
           package test
-          
+
           interface MyService {
             fun doSomething()
           }
@@ -121,9 +121,9 @@ class AutoServiceCompilerPluginTest {
         "TestServiceImpl.kt",
         """
           package test
-          
+
           import com.google.auto.service.AutoService
-          
+
           @AutoService
           class MyServiceImpl : MyService {
             override fun doSomething() {
@@ -155,7 +155,7 @@ class AutoServiceCompilerPluginTest {
           interface ServiceA {
             fun doA()
           }
-          
+
           interface ServiceB {
             fun doB()
           }
@@ -165,9 +165,9 @@ class AutoServiceCompilerPluginTest {
         "TestServiceImpl.kt",
         """
           package test
-          
+
           import com.google.auto.service.AutoService
-          
+
           @AutoService(ServiceA::class, ServiceB::class)
           class MultiServiceImpl : ServiceA, ServiceB {
             override fun doA() {}
@@ -187,5 +187,46 @@ class AutoServiceCompilerPluginTest {
     
     assertTrue(serviceFileA.readText().contains("test.MultiServiceImpl"))
     assertTrue(serviceFileB.readText().contains("test.MultiServiceImpl"))
+  }
+
+  @Test
+  fun `test mirror classes are stripped from output`() {
+    val result = compile(
+      SourceFile.kotlin(
+        "TestService.kt",
+        """
+          package test
+
+          interface MyService {
+            fun doSomething()
+          }
+        """
+      ),
+      SourceFile.kotlin(
+        "TestServiceImpl.kt",
+        """
+          package test
+
+          import com.google.auto.service.AutoService
+
+          @AutoService(MyService::class)
+          class MyServiceImpl : MyService {
+            override fun doSomething() {}
+          }
+        """
+      )
+    )
+
+    assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode)
+
+    // Verify no __AutoService__ mirror classes exist in the output
+    val mirrorClasses = result.outputDirectory.walkTopDown()
+      .filter { it.isFile && it.name.contains("__AutoService__") && it.extension == "class" }
+      .toList()
+
+    assertTrue(
+      mirrorClasses.isEmpty(),
+      "Mirror classes should be stripped from output, but found: ${mirrorClasses.map { it.name }}"
+    )
   }
 }
