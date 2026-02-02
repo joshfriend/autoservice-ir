@@ -1,8 +1,7 @@
 public final class com/fueledbycaffeine/autoservice/ir/AutoServiceCommandLineProcessor : org/jetbrains/kotlin/compiler/plugin/CommandLineProcessor {
 	public static final field Companion Lcom/fueledbycaffeine/autoservice/ir/AutoServiceCommandLineProcessor$Companion;
-	public static final field OPTION_NAME_DEBUG Ljava/lang/String;
+	public static final field OPTION_NAME_DEBUG_LOG_DIR Ljava/lang/String;
 	public static final field OPTION_NAME_OUTPUT_DIR Ljava/lang/String;
-	public static final field OPTION_NAME_PROJECT_ROOT Ljava/lang/String;
 	public static final field PLUGIN_ID Ljava/lang/String;
 	public fun <init> ()V
 	public fun appendList (Lorg/jetbrains/kotlin/config/CompilerConfiguration;Lorg/jetbrains/kotlin/config/CompilerConfigurationKey;Ljava/lang/Object;)V
