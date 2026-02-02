@@ -89,13 +89,17 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
     classSymbol: FirClassSymbol<*>,
     context: NestedClassGenerationContext,
   ): Set<Name> {
-    val annotation = classSymbol.fir.annotations.firstOrNull { annotation ->
+    val firClass = classSymbol.fir
+    val annotation = firClass.annotations.firstOrNull { annotation ->
       isAutoServiceAnnotation(annotation.annotationTypeRef)
     }
     
     if (annotation == null) {
       return emptySet()
     }
+
+    // Note: Service interfaces metadata is stored by AutoServiceClassChecker
+    // which runs after types are resolved. We just generate the mirror class here.
 
     val mirrorClassId = classSymbol.classId.createNestedClassId(AutoServiceSymbols.Names.MIRROR_CLASS)
     mirrorClassesToGenerate.add(mirrorClassId)
