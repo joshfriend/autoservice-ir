@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1]
+
 ### Changed
 - Generate metadata about service classes during FIR using `FirDeclarationDataRegistry` so that IR can read them directly instead of reparsing the `@AutoService` annotations and classes.
 - Remove mirror classes during IR generation
