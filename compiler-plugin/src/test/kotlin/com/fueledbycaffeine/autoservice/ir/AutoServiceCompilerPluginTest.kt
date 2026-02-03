@@ -229,4 +229,32 @@ class AutoServiceCompilerPluginTest {
       "Mirror classes should be stripped from output, but found: ${mirrorClasses.map { it.name }}"
     )
   }
+
+  @Test
+  fun `test aliased import annotation`() {
+    // Uses: import com.fueledbycaffeine.autoservice.AutoService as AS
+    // This exercises FIR's handling of unresolved type references during early phases.
+    // When @AS is used, the type reference may not be resolved yet during getNestedClassifiersNames.
+    val result = compile(
+      SourceFile.kotlin(
+        "TestService.kt",
+        """
+          package test
+
+          import com.fueledbycaffeine.autoservice.AutoService as AS
+
+          interface MyService
+
+          @AS(MyService::class)
+          class MyServiceImpl : MyService
+        """
+      )
+    )
+
+    assertEquals(KotlinCompilation.ExitCode.OK, result.exitCode, "Compilation should succeed with aliased import. Messages: ${result.messages}")
+
+    val serviceFile = result.outputDirectory.resolve("META-INF/services/test.MyService")
+    assertTrue(serviceFile.exists(), "Service file should be generated with aliased import")
+    assertEquals("test.MyServiceImpl", serviceFile.readText().trim())
+  }
 }

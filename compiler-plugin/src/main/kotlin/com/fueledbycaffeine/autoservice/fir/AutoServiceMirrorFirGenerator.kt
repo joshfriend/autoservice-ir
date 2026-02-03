@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
+import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
@@ -143,6 +144,12 @@ internal class AutoServiceMirrorFirGenerator(session: FirSession) : FirDeclarati
   }
   
   private fun isAutoServiceAnnotation(typeRef: FirTypeRef): Boolean {
+    // During early FIR phases (like getNestedClassifiersNames called during
+    // FirCompanionGenerationTransformer), type references may not be resolved yet.
+    // If the type isn't resolved yet, return false - FIR runs multiple rounds and
+    // will call us again once the type is resolved.
+    if (typeRef !is FirResolvedTypeRef) return false
+
     val classId = typeRef.coneType.classId ?: return false
     return classId == AutoServiceSymbols.ClassIds.AUTOSERVICE ||
       classId == AutoServiceSymbols.ClassIds.GOOGLE_AUTOSERVICE
