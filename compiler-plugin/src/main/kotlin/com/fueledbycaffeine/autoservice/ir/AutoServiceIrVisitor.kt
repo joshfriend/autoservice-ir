@@ -1,24 +1,15 @@
 package com.fueledbycaffeine.autoservice.ir
 
-import com.fueledbycaffeine.autoservice.AutoServiceSymbols
+import com.fueledbycaffeine.autoservice.fir.autoServiceMetadata
 import org.jetbrains.kotlin.ir.IrDiagnosticReporter
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.path
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
-import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.fileOrNull
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
-import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.nonDispatchArguments
 import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.StandardClassIds
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class AutoServiceIrVisitor(
@@ -57,29 +48,15 @@ internal class AutoServiceIrVisitor(
       serviceRegistry.trackCompiledClass(className)
     }
 
-    // Check for either our annotation or Google's
-    val annotation = declaration.getAnnotation(AutoServiceSymbols.FqNames.AUTOSERVICE)
-      ?: declaration.getAnnotation(AutoServiceSymbols.FqNames.GOOGLE_AUTOSERVICE)
-      
-    if (annotation == null) {
-      return
-    }
-
-    debugLogger.log("${declaration.locationString()} Processing @$annotation on class: ${declaration.fqNameWhenAvailable}")
-
-    // Extract service interfaces from the annotation
-    // FIR has already validated everything, so this extraction is safe
-    val serviceInterfaces = extractServiceInterfacesFromAnnotation(annotation, declaration)
+    // Get service interfaces from FIR metadata (computed during FIR phase)
+    // This avoids re-parsing annotations and re-inferring types in IR
+    val metadata = declaration.autoServiceMetadata ?: return
+    val serviceInterfaces = metadata.serviceInterfaces
     
-    if (serviceInterfaces.isEmpty()) {
-      // This should never happen if FIR validation worked correctly
-      diagnosticReporter.report(
-        AutoServiceIrDiagnostics.ERROR,
-        "${declaration.locationString()} @AutoService annotation found but no service interfaces specified. " +
-          "This indicates a compiler plugin issue."
-      )
-      return
-    }
+    if (serviceInterfaces.isEmpty()) return
+
+    debugLogger.log("${declaration.locationString()} Processing @AutoService on class: ${declaration.fqNameWhenAvailable}")
+    debugLogger.log("${declaration.locationString()} Service interfaces from FIR metadata: $serviceInterfaces")
 
     val providerClass = declaration.jvmBinaryName ?: run {
       diagnosticReporter.report(
@@ -96,42 +73,6 @@ internal class AutoServiceIrVisitor(
       val serviceInterfaceJvmName = serviceInterface.jvmBinaryName
       debugLogger.log("${declaration.locationString()} Registering service: $serviceInterfaceJvmName -> $providerClass")
       serviceRegistry.register(serviceInterfaceJvmName, providerClass)
-    }
-  }
-
-  /**
-   * Extracts service interfaces from the @AutoService annotation's `value` parameter.
-   * 
-   * If the annotation has no explicit value (inferred type), infers service interfaces
-   * from the class's supertypes.
-   * 
-   * FIR has already validated the annotation, so this extraction is safe.
-   */
-  private fun extractServiceInterfacesFromAnnotation(
-    annotation: IrConstructorCall,
-    declaration: IrClass
-  ): List<ClassId> {
-    // Try to get explicit service interfaces from annotation value parameter
-    val valueArgs = annotation.nonDispatchArguments.firstOrNull() as? IrVararg
-    
-    if (valueArgs != null && valueArgs.elements.isNotEmpty()) {
-      // Explicit service interfaces provided
-      return valueArgs.elements.mapNotNull { element ->
-        when (element) {
-          is IrClassReference -> element.classType.classOrNull?.owner?.classId
-          else -> null
-        }
-      }
-    }
-    
-    // No explicit service interfaces - infer from implemented interfaces
-    // FIR has already validated that there's exactly one interface to infer from
-    return declaration.superTypes.mapNotNull { superType ->
-      // Skip Any as possible inferred service class
-      when (val classId = superType.classOrNull?.owner?.classId) {
-        StandardClassIds.Any -> null
-        else -> classId
-      }
     }
   }
 }

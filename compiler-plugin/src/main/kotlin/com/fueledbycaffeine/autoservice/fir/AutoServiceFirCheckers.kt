@@ -43,6 +43,8 @@ internal class AutoServiceFirCheckersExtension(session: FirSession) : FirAdditio
  * - Wrong class kinds (interface, enum, annotation, object)
  * - Missing service interface (no explicit interface and can't infer from supertypes)
  * - Not implementing declared service interface
+ * 
+ * Also stores [AutoServiceMetadata] on the class for IR phase consumption.
  */
 internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common) {
 
@@ -55,6 +57,10 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
     checkVisibility(declaration, source)
     checkClassKind(declaration, source)
     checkServiceInterfaces(declaration, autoServiceAnnotation, source)
+    
+    // Store resolved service interfaces metadata for IR to consume
+    // At this point in FIR, types are fully resolved so we can safely access coneType
+    storeServiceInterfacesMetadata(declaration, autoServiceAnnotation)
   }
 
   private fun findAutoServiceAnnotation(declaration: FirClass): FirAnnotation? {
@@ -136,6 +142,24 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
         }
       }
     }
+  }
+
+  /**
+   * Stores the resolved service interfaces as metadata on the FIR class.
+   * This metadata is later accessed by the IR phase to avoid re-inferring types.
+   */
+  private fun storeServiceInterfacesMetadata(declaration: FirClass, annotation: FirAnnotation) {
+    val explicitServiceInterfaces = extractExplicitServiceInterfaces(annotation)
+    val supertypes = declaration.superTypeRefs
+      .mapNotNull { it.coneType.classId }
+      .filter { it != StandardClassIds.Any }
+
+    val serviceInterfaces = explicitServiceInterfaces.ifEmpty {
+      if (supertypes.size == 1) supertypes else emptyList()
+    }
+
+    // Store the metadata for IR to consume
+    declaration.autoServiceMetadata = AutoServiceMetadata(serviceInterfaces)
   }
 
   private fun extractExplicitServiceInterfaces(annotation: FirAnnotation): List<ClassId> {
