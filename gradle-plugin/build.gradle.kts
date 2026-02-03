@@ -17,12 +17,15 @@ buildConfig {
 }
 
 gradlePlugin {
+  website = "https://github.com/joshfriend/autoservice-ir"
+  vcsUrl = "https://github.com/joshfriend/autoservice-ir"
   plugins {
     create("autoServicePlugin") {
       id = "com.fueledbycaffeine.autoservice"
       implementationClass = "com.fueledbycaffeine.autoservice.gradle.AutoServiceGradlePlugin"
       displayName = "AutoService Gradle Plugin"
       description = "Kotlin compiler plugin for generating META-INF/services files"
+      tags = listOf("kotlin", "autoservice", "service-loader", "compiler-plugin")
     }
   }
 }
