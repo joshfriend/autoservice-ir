@@ -1,7 +1,6 @@
 package conventions
 
 import com.autonomousapps.GradleTestKitPlugin
-import com.autonomousapps.GradleTestKitSupportExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -23,13 +22,6 @@ class BasePlugin : Plugin<Project> {
     pluginManager.apply("org.jetbrains.kotlin.jvm")
     pluginManager.apply(PublishConventionPlugin::class.java)
     pluginManager.apply(GradleTestKitPlugin::class.java)
-
-    // Disable automatic test publication creation to prevent conflicts
-    // The testkit plugin will still create installForFunctionalTest task
-    // and publish existing publications to the functional test repository
-    extensions.configure(GradleTestKitSupportExtension::class.java) { ext ->
-      ext.disablePublication()
-    }
 
     val libs = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
     val jvmTarget = libs.findVersion("jvmTarget").get().toString()

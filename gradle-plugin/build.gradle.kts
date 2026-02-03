@@ -21,7 +21,7 @@ gradlePlugin {
     create("autoServicePlugin") {
       id = "com.fueledbycaffeine.autoservice"
       implementationClass = "com.fueledbycaffeine.autoservice.gradle.AutoServiceGradlePlugin"
-      displayName = "AutoService Compiler Plugin"
+      displayName = "AutoService Gradle Plugin"
       description = "Kotlin compiler plugin for generating META-INF/services files"
     }
   }

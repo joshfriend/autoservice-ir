@@ -7,9 +7,7 @@ import com.autonomousapps.kit.gradle.Dependency
 import com.autonomousapps.kit.gradle.GradleProperties
 import com.autonomousapps.kit.gradle.Plugin
 
-// Use the version from gradle.properties since AbstractGradleProject.PLUGIN_UNDER_TEST_VERSION 
-// may not be populated correctly in all testkit versions
-private const val PLUGIN_VERSION = "0.1.0-SNAPSHOT"
+private val kotlinVersion: String = System.getProperty("kotlinVersion")
 
 /**
  * Creates test projects for AutoService functional tests.
@@ -33,8 +31,8 @@ class AutoServiceProject : AbstractGradleProject() {
       gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
-          Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
-          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_VERSION)
+          Plugin("org.jetbrains.kotlin.jvm", kotlinVersion),
+          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_UNDER_TEST_VERSION)
         )
       }
       sources = listOf(
@@ -73,8 +71,8 @@ class AutoServiceProject : AbstractGradleProject() {
       gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
-          Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
-          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_VERSION)
+          Plugin("org.jetbrains.kotlin.jvm", kotlinVersion),
+          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_UNDER_TEST_VERSION)
         )
       }
       sources = listOf(
@@ -113,8 +111,8 @@ class AutoServiceProject : AbstractGradleProject() {
       gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
-          Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
-          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_VERSION)
+          Plugin("org.jetbrains.kotlin.jvm", kotlinVersion),
+          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_UNDER_TEST_VERSION)
         )
       }
       sources = listOf(
@@ -153,8 +151,8 @@ class AutoServiceProject : AbstractGradleProject() {
       gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
-          Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
-          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_VERSION)
+          Plugin("org.jetbrains.kotlin.jvm", kotlinVersion),
+          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_UNDER_TEST_VERSION)
         )
       }
       sources = listOf(
@@ -207,8 +205,8 @@ class AutoServiceProject : AbstractGradleProject() {
       gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
-          Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
-          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_VERSION)
+          Plugin("org.jetbrains.kotlin.jvm", kotlinVersion),
+          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_UNDER_TEST_VERSION)
         )
         dependencies(
           Dependency("implementation", "com.google.auto.service:auto-service-annotations:1.1.1")
@@ -250,8 +248,8 @@ class AutoServiceProject : AbstractGradleProject() {
       gradleProperties = gradleProperties()
       withBuildScript {
         plugins(
-          Plugin("org.jetbrains.kotlin.jvm", "2.3.0"),
-          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_VERSION)
+          Plugin("org.jetbrains.kotlin.jvm", kotlinVersion),
+          Plugin("com.fueledbycaffeine.autoservice", PLUGIN_UNDER_TEST_VERSION)
         )
         dependencies(
           Dependency("implementation", "com.google.auto.service:auto-service-annotations:1.1.1")
