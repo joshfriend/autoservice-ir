@@ -33,7 +33,7 @@ public class AutoServiceGradlePlugin : KotlinCompilerPluginSupportPlugin {
     // Automatically add our annotations to the compile classpath
     // Users don't need to manually add this dependency
     project.dependencies.add(
-      kotlinCompilation.defaultSourceSet.implementationConfigurationName,
+      kotlinCompilation.defaultSourceSet.compileOnlyConfigurationName,
       "$GROUP:annotations:$VERSION",
     )
 

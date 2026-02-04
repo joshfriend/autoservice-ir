@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `annotations` artifact is only added to the `compileOnly` configuration instead of `implementation`
+
 ## [0.1.2]
 
 ### Fixed
