@@ -6,13 +6,10 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
  * Registers FIR extensions for AutoService.
  * 
  * Key extensions:
- * - [AutoServiceMirrorFirGenerator]: Generates synthetic "mirror" declarations for incremental
- *   compilation support
- * - [AutoServiceFirCheckersExtension]: Provides IDE error checking without requiring a full build
+ * - [AutoServiceFirCheckersExtension]: Provides IDE error checking and stores metadata for IR phase
  */
 internal class AutoServiceFirExtensionRegistrar : FirExtensionRegistrar() {
   override fun ExtensionRegistrarContext.configurePlugin() {
-    +::AutoServiceMirrorFirGenerator
     +::AutoServiceFirCheckersExtension
 
     registerDiagnosticContainers(AutoServiceDiagnostics)

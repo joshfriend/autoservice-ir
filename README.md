@@ -208,21 +208,6 @@ dependencies {
 }
 ```
 
-**Benefits:** Faster compilation, better incremental compilation, type inference, native K2 support
-
-## How It Works
-1. **FIR Phase**: During frontend compilation, the plugin:
-   - Generates synthetic "mirror" declarations for incremental compilation tracking
-   - Validates @AutoService usage with real-time IDE error checking (abstract classes, visibility, etc.)
-2. **Type Inference**: If no service type is specified and the class has exactly one non-Any supertype, it's used automatically
-3. **Validation**: During IR phase, verifies that annotated classes actually implement their declared service interfaces
-4. **IR Phase**: During backend compilation, the plugin generates the service registry
-5. **File Generation**: Creates `META-INF/services/<service-interface>` files in the output directory
-   - **Merges** with existing service files from previous compilations (incremental compilation support)
-   - Validates and removes entries for deleted or modified classes
-   - Maintains sorted entries for consistency
-6. **Service Loading**: At runtime, `java.util.ServiceLoader` can discover these implementations
-
 ## Comparison with Alternative Processors
 | Feature                     | AutoService-IR | [KSP AutoService][auto-service-ksp] | [KAPT AutoService][google-auto-service] |
 |-----------------------------|----------------|-------------------------------------|-----------------------------------------|
