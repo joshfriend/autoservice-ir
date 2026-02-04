@@ -3,11 +3,9 @@ package com.fueledbycaffeine.autoservice.ir
 import org.jetbrains.kotlin.backend.common.KtDefaultCommonBackendErrorMessages
 import org.jetbrains.kotlin.diagnostics.KtSourcelessDiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Severity
-import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.appendText
 import kotlin.io.path.createParentDirectories
-import kotlin.io.path.writeText
 
 internal object AutoServiceIrDiagnostics {
   private val rendererFactory = KtDefaultCommonBackendErrorMessages

@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
-import java.io.File
 import java.nio.file.Path
 
 /**
