@@ -1,0 +1,1 @@
+/AbstractClass.kt:(152,160): error: @AutoService cannot be applied to an abstract class

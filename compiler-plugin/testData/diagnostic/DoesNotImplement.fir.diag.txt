@@ -1,0 +1,1 @@
+/DoesNotImplement.kt:(180,194): error: @AutoService class does not implement ServiceB

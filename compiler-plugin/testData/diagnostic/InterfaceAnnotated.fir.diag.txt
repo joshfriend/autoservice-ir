@@ -1,0 +1,1 @@
+/InterfaceAnnotated.kt:(162,178): error: @AutoService cannot be applied to an interface
