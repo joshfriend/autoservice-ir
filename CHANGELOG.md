@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `annotations` artifact is only added to the `compileOnly` configuration instead of `implementation`
+- Avoid redundant "abstract class" error for interfaces/enums (they now only show their specific error)
 
 ## [0.1.2]
 
