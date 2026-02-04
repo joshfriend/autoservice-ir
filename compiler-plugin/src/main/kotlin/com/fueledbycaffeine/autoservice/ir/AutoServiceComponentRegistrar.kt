@@ -19,7 +19,7 @@ import java.nio.file.Path
  */
 public class AutoServiceComponentRegistrar : CompilerPluginRegistrar() {
 
-  override val pluginId: String = "com.fueledbycaffeine.autoservice.compiler"
+  override val pluginId: String = AutoServiceCommandLineProcessor.PLUGIN_ID
 
   override val supportsK2: Boolean = true
 
