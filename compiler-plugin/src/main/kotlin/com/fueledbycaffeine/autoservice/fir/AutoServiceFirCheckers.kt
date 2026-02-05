@@ -73,6 +73,9 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
 
   context(context: CheckerContext, reporter: DiagnosticReporter)
   private fun checkNotAbstract(declaration: FirClass, source: KtSourceElement) {
+    // Skip abstract check for interfaces/enums/etc since they have their own errors
+    if (declaration.classKind != ClassKind.CLASS) return
+
     if (declaration.isAbstract) {
       with(context) {
         reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_ABSTRACT_CLASS)

@@ -1,0 +1,1 @@
+/PrivateClass.kt:(152,159): error: @AutoService classes must be public or internal

@@ -1,0 +1,1 @@
+/AmbiguousInterface.kt:(162,178): error: @AutoService requires a service interface: either specify it explicitly or ensure the class has exactly one supertype
