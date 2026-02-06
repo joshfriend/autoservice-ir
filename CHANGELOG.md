@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `annotations` artifact is only added to the `compileOnly` configuration instead of `implementation`
 - Avoid redundant "abstract class" error for interfaces/enums (they now only show their specific error)
 
+### Changed
+- Removed synthetic mirror class generation - no longer needed since incremental compilation was already handled via filesystem validation
+
 ## [0.1.2]
 
 ### Fixed

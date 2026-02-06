@@ -2,7 +2,6 @@ package com.fueledbycaffeine.autoservice
 
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
 /**
  * Centralized symbols and identifiers for the AutoService compiler plugin.
@@ -36,15 +35,5 @@ internal object AutoServiceSymbols {
   object FqNames {
     val AUTOSERVICE: FqName = ClassIds.AUTOSERVICE.asSingleFqName()
     val GOOGLE_AUTOSERVICE: FqName = ClassIds.GOOGLE_AUTOSERVICE.asSingleFqName()
-  }
-
-  /**
-   * Special identifier names used by the plugin.
-   */
-  object Names {
-    /**
-     * Name of the synthetic mirror class generated for incremental compilation support.
-     */
-    val MIRROR_CLASS: Name = Name.identifier("__AutoService__")
   }
 }
