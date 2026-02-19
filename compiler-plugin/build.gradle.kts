@@ -4,11 +4,20 @@ plugins {
   idea
 }
 
+val kotlinVersionParts = libs.versions.kotlin.get().split("-")[0].split(".").map { it.toInt() }
+val isKotlin2320OrLater = kotlinVersionParts[0] > 2 ||
+  (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] > 3) ||
+  (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] == 3 && kotlinVersionParts[2] >= 20)
+
 sourceSets {
   test {
     // java.srcDir is configured below via generateTests task output
     kotlin.setSrcDirs(emptyList<String>())
     resources.setSrcDirs(listOf("testData"))
+  }
+  named("testFixtures") {
+    val versionSpecificDir = if (isKotlin2320OrLater) "kotlin-2.3.20" else "kotlin-pre-2.3.20"
+    kotlin.srcDir("src/testFixtures/$versionSpecificDir")
   }
 }
 
