@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.declarations.utils.isAbstract
 import org.jetbrains.kotlin.fir.declarations.utils.visibility
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
-import org.jetbrains.kotlin.fir.expressions.FirArrayLiteral
+import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirVarargArgumentsExpression
@@ -172,9 +172,10 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
 
   private fun extractClassIdsFromArgument(argument: FirExpression): List<ClassId> {
     return when (argument) {
-      is FirArrayLiteral -> argument.argumentList.arguments.flatMap { extractClassIdsFromArgument(it) }
-      is FirVarargArgumentsExpression -> argument.arguments.flatMap { extractClassIdsFromArgument(it) }
       is FirGetClassCall -> listOfNotNull(argument.argument.resolvedType.classId)
+      is FirVarargArgumentsExpression -> argument.arguments.flatMap { extractClassIdsFromArgument(it) }
+      // Matches FirArrayLiteral (Kotlin <=2.3.0) and FirCollectionLiteral (Kotlin >=2.3.20)
+      is FirCall -> argument.argumentList.arguments.flatMap { extractClassIdsFromArgument(it) }
       else -> emptyList()
     }
   }
