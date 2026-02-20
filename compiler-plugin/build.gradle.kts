@@ -4,10 +4,28 @@ plugins {
   idea
 }
 
-val kotlinVersionParts = libs.versions.kotlin.get().split("-")[0].split(".").map { it.toInt() }
+// Allow overriding the Kotlin version for version-matrix testing (e.g. -DkotlinVersion=2.3.20)
+val defaultKotlinVersion = libs.versions.kotlin.get()
+val effectiveKotlinVersion: String = System.getProperty("kotlinVersion") ?: defaultKotlinVersion
+
+val kotlinVersionParts = effectiveKotlinVersion.split("-")[0].split(".").map { it.toInt() }
 val isKotlin2320OrLater = kotlinVersionParts[0] > 2 ||
   (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] > 3) ||
   (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] == 3 && kotlinVersionParts[2] >= 20)
+
+// When testing against a non-default Kotlin version, substitute all org.jetbrains.kotlin
+// dependencies in test-related configurations so the compiler test framework matches.
+if (effectiveKotlinVersion != defaultKotlinVersion) {
+  configurations.configureEach {
+    if (name.startsWith("test", ignoreCase = true)) {
+      resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+          useVersion(effectiveKotlinVersion)
+        }
+      }
+    }
+  }
+}
 
 sourceSets {
   test {
