@@ -9,19 +9,22 @@ val defaultKotlinVersion = libs.versions.kotlin.get()
 val effectiveKotlinVersion: String = System.getProperty("kotlinVersion") ?: defaultKotlinVersion
 
 val kotlinVersionParts = effectiveKotlinVersion.split("-")[0].split(".").map { it.toInt() }
-val isKotlin2320OrLater = kotlinVersionParts[0] > 2 ||
-  (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] > 3) ||
-  (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] == 3 && kotlinVersionParts[2] >= 20)
+
+fun isAtLeastKotlinVersion(major: Int, minor: Int, patch: Int): Boolean =
+  kotlinVersionParts[0] > major ||
+    (kotlinVersionParts[0] == major && kotlinVersionParts[1] > minor) ||
+    (kotlinVersionParts[0] == major &&
+      kotlinVersionParts[1] == minor &&
+      kotlinVersionParts[2] >= patch)
 
 // When testing against a non-default Kotlin version, substitute all org.jetbrains.kotlin
-// dependencies in test-related configurations so the compiler test framework matches.
+// dependencies in this project so the compiler plugin and test framework compile against
+// the same Kotlin API level.
 if (effectiveKotlinVersion != defaultKotlinVersion) {
   configurations.configureEach {
-    if (name.startsWith("test", ignoreCase = true)) {
-      resolutionStrategy.eachDependency {
-        if (requested.group == "org.jetbrains.kotlin") {
-          useVersion(effectiveKotlinVersion)
-        }
+    resolutionStrategy.eachDependency {
+      if (requested.group == "org.jetbrains.kotlin") {
+        useVersion(effectiveKotlinVersion)
       }
     }
   }
@@ -34,7 +37,12 @@ sourceSets {
     resources.setSrcDirs(listOf("testData"))
   }
   named("testFixtures") {
-    val versionSpecificDir = if (isKotlin2320OrLater) "kotlin-2.3.20" else "kotlin-pre-2.3.20"
+    val versionSpecificDir =
+      when {
+        isAtLeastKotlinVersion(2, 4, 0) -> "kotlin-2.4.0"
+        isAtLeastKotlinVersion(2, 3, 20) -> "kotlin-2.3.20"
+        else -> "kotlin-pre-2.3.20"
+      }
     kotlin.srcDir("src/testFixtures/$versionSpecificDir")
   }
 }
@@ -43,10 +51,11 @@ idea { module.generatedSourceDirs.add(projectDir.resolve("test-gen/java")) }
 
 kotlin {
   compilerOptions {
-    freeCompilerArgs.addAll(
-      "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
-      "-Xcontext-parameters"
-    )
+    freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
+
+    if (!isAtLeastKotlinVersion(2, 4, 0)) {
+      freeCompilerArgs.add("-Xcontext-parameters")
+    }
   }
 }
 
