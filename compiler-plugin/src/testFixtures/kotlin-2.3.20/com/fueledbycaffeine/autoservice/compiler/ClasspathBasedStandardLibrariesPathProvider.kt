@@ -1,5 +1,3 @@
-// Copyright (C) 2024 FueledByCaffeine
-// SPDX-License-Identifier: Apache-2.0
 package com.fueledbycaffeine.autoservice.compiler
 
 import java.io.File

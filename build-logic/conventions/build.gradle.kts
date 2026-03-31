@@ -3,6 +3,19 @@ plugins {
   id("java-gradle-plugin")
 }
 
+val defaultKotlinVersion = libs.versions.kotlin.get()
+val effectiveKotlinVersion: String = System.getProperty("kotlinVersion") ?: defaultKotlinVersion
+
+if (effectiveKotlinVersion != defaultKotlinVersion) {
+  configurations.configureEach {
+    resolutionStrategy.eachDependency {
+      if (requested.group == "org.jetbrains.kotlin") {
+        useVersion(effectiveKotlinVersion)
+      }
+    }
+  }
+}
+
 kotlin {
   jvmToolchain(21)
 }
