@@ -5,8 +5,8 @@ pluginManagement {
   plugins {
     id("com.gradle.develocity") version "4.3"
     id("com.gradle.plugin-publish") version "1.3.1"
-    id("org.jetbrains.kotlin.jvm") version (System.getProperty("kotlinVersion") ?: "2.3.0")
-    id("com.autonomousapps.build-health") version "3.5.1"
+    id("org.jetbrains.kotlin.jvm") version (System.getProperty("kotlinVersion") ?: "2.4.0")
+    id("com.autonomousapps.build-health") version "3.14.1"
     id("com.autonomousapps.testkit") version "0.14"
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.17.0"
     id("com.github.gmazzo.buildconfig") version "6.0.7"
@@ -15,6 +15,18 @@ pluginManagement {
   repositories {
     gradlePluginPortal()
     mavenCentral()
+  }
+}
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    // DAGP (build-health) reads Kotlin metadata from compiled classes. As of 3.14.1 the
+    // metadata library is resolved from the build instead of being bundled, so it must
+    // match the project's Kotlin version to parse newer metadata (e.g. 2.4.0).
+    classpath("org.jetbrains.kotlin:kotlin-metadata-jvm:${System.getProperty("kotlinVersion") ?: "2.4.0"}")
   }
 }
 

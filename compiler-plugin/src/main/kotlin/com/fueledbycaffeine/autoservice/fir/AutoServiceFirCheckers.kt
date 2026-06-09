@@ -77,9 +77,7 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
     if (declaration.classKind != ClassKind.CLASS) return
 
     if (declaration.isAbstract) {
-      with(context) {
-        reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_ABSTRACT_CLASS)
-      }
+      reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_ABSTRACT_CLASS)
     }
   }
 
@@ -87,9 +85,7 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
   private fun checkVisibility(declaration: FirClass, source: KtSourceElement) {
     val visibility = declaration.visibility
     if (visibility != Visibilities.Public && visibility != Visibilities.Internal) {
-      with(context) {
-        reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_VISIBILITY_ERROR)
-      }
+      reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_VISIBILITY_ERROR)
     }
   }
 
@@ -103,9 +99,7 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
       else -> null
     }
     if (classKindError != null) {
-      with(context) {
-        reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_WRONG_CLASS_KIND, classKindError)
-      }
+      reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_WRONG_CLASS_KIND, classKindError)
     }
   }
 
@@ -122,9 +116,7 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
 
     // Check: Must have a service interface (explicit or inferred)
     if (explicitServiceInterfaces.isEmpty() && (supertypes.isEmpty() || supertypes.size > 1)) {
-      with(context) {
-        reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_MISSING_SERVICE_INTERFACE)
-      }
+      reporter.reportOn(source, AutoServiceDiagnostics.AUTOSERVICE_MISSING_SERVICE_INTERFACE)
       return
     }
 
@@ -136,13 +128,11 @@ internal object AutoServiceClassChecker : FirClassChecker(MppCheckerKind.Common)
     for (serviceInterface in serviceInterfaces) {
       val implementsInterface = declaration.superTypeRefs.any { it.coneType.classId == serviceInterface }
       if (!implementsInterface) {
-        with(context) {
-          reporter.reportOn(
-            source,
-            AutoServiceDiagnostics.AUTOSERVICE_DOES_NOT_IMPLEMENT,
-            serviceInterface.asFqNameString()
-          )
-        }
+        reporter.reportOn(
+          source,
+          AutoServiceDiagnostics.AUTOSERVICE_DOES_NOT_IMPLEMENT,
+          serviceInterface.asFqNameString()
+        )
       }
     }
   }

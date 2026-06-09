@@ -39,10 +39,10 @@ jobs:
         kotlin_version:
           - 2.3.10
           - 2.3.20
-          - 2.4.0-Beta1
+          - 2.4.0
         gradle_version:
           - 8.14.3
-          - 9.4.0
+          - 9.5.1
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -83,7 +83,7 @@ jobs:
         kotlin_version:
           - 2.3.10
           - 2.3.20
-          - 2.4.0-Beta1
+          - 2.4.0
     runs-on: ubuntu-latest
     permissions:
       contents: read

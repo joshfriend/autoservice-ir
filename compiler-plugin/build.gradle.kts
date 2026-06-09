@@ -17,19 +17,6 @@ fun isAtLeastKotlinVersion(major: Int, minor: Int, patch: Int): Boolean =
       kotlinVersionParts[1] == minor &&
       kotlinVersionParts[2] >= patch)
 
-// When testing against a non-default Kotlin version, substitute all org.jetbrains.kotlin
-// dependencies in this project so the compiler plugin and test framework compile against
-// the same Kotlin API level.
-if (effectiveKotlinVersion != defaultKotlinVersion) {
-  configurations.configureEach {
-    resolutionStrategy.eachDependency {
-      if (requested.group == "org.jetbrains.kotlin") {
-        useVersion(effectiveKotlinVersion)
-      }
-    }
-  }
-}
-
 sourceSets {
   test {
     // java.srcDir is configured below via generateTests task output
@@ -53,6 +40,8 @@ kotlin {
   compilerOptions {
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
 
+    // Context parameters are enabled by default as of language version 2.4, where passing
+    // this flag is redundant and fails under allWarningsAsErrors. Older versions still need it.
     if (!isAtLeastKotlinVersion(2, 4, 0)) {
       freeCompilerArgs.add("-Xcontext-parameters")
     }

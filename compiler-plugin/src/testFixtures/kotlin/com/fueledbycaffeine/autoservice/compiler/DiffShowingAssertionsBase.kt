@@ -13,8 +13,12 @@ import java.io.File
  * Custom assertions service that shows the actual diff between expected and actual content
  * when a file comparison fails. The default JUnit5Assertions only says "differs" without 
  * showing what the difference is.
+ *
+ * Version-specific subclasses live in the `kotlin-*` source dirs because the
+ * [AssertionsService] abstract surface differs across Kotlin versions (e.g.
+ * `assertTimeoutPreemptively` only exists in 2.4.0+).
  */
-object DiffShowingAssertions : AssertionsService() {
+abstract class DiffShowingAssertionsBase : AssertionsService() {
 
   override fun doesEqualToFile(expectedFile: File, actual: String, sanitizer: (String) -> String): Boolean {
     return JUnit5Assertions.doesEqualToFile(expectedFile, actual, sanitizer)

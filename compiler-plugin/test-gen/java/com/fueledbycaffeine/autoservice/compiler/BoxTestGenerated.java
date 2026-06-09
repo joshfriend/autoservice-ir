@@ -15,6 +15,10 @@ import java.util.regex.Pattern;
 @TestMetadata("compiler-plugin/testData/box")
 @TestDataPath("$PROJECT_ROOT")
 public class BoxTestGenerated extends AbstractBoxTest {
+  private void run(String fileName) {
+    runTest("compiler-plugin/testData/box/" + fileName);
+  }
+
   @Test
   public void testAllFilesPresentInBox() {
     KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-plugin/testData/box"), Pattern.compile("^(.+)\\.kt$"), null, true);
@@ -23,36 +27,36 @@ public class BoxTestGenerated extends AbstractBoxTest {
   @Test
   @TestMetadata("GoogleAnnotation.kt")
   public void testGoogleAnnotation() {
-    runTest("compiler-plugin/testData/box/GoogleAnnotation.kt");
+    run("GoogleAnnotation.kt");
   }
 
   @Test
   @TestMetadata("InferredServiceInterface.kt")
   public void testInferredServiceInterface() {
-    runTest("compiler-plugin/testData/box/InferredServiceInterface.kt");
+    run("InferredServiceInterface.kt");
   }
 
   @Test
   @TestMetadata("MultipleImplementations.kt")
   public void testMultipleImplementations() {
-    runTest("compiler-plugin/testData/box/MultipleImplementations.kt");
+    run("MultipleImplementations.kt");
   }
 
   @Test
   @TestMetadata("MultipleServiceInterfaces.kt")
   public void testMultipleServiceInterfaces() {
-    runTest("compiler-plugin/testData/box/MultipleServiceInterfaces.kt");
+    run("MultipleServiceInterfaces.kt");
   }
 
   @Test
   @TestMetadata("NestedClassProvider.kt")
   public void testNestedClassProvider() {
-    runTest("compiler-plugin/testData/box/NestedClassProvider.kt");
+    run("NestedClassProvider.kt");
   }
 
   @Test
   @TestMetadata("SingleServiceImplementation.kt")
   public void testSingleServiceImplementation() {
-    runTest("compiler-plugin/testData/box/SingleServiceImplementation.kt");
+    run("SingleServiceImplementation.kt");
   }
 }
