@@ -34,12 +34,24 @@ public class AutoServiceComponentRegistrar : CompilerPluginRegistrar() {
     }
     val debugLogDir = configuration[KEY_DEBUG_LOG_DIR]?.let { Path.of(it) }
 
-    // Register FIR extension for IC support via synthetic mirror declarations
-    FirExtensionRegistrarAdapter.registerExtension(AutoServiceFirExtensionRegistrar())
+    // Register FIR extension for diagnostics
+    registerExtensionCompat(FirExtensionRegistrarAdapter.Companion, AutoServiceFirExtensionRegistrar())
 
     // Register IR extension for service file generation
-    IrGenerationExtension.registerExtension(
-      AutoServiceIrGenerationExtension(outputDir, debugLogDir)
+    registerExtensionCompat(
+      IrGenerationExtension.Companion,
+      AutoServiceIrGenerationExtension(outputDir, debugLogDir),
     )
+  }
+
+  /**
+   * Registers an extension via reflection so a single published artifact stays binary compatible
+   * across Kotlin versions. The receiver type of [ExtensionStorage.registerExtension] changed in
+   * Kotlin 2.4 from `ProjectExtensionDescriptor` to `ExtensionPointDescriptor`, so a direct call
+   * binds to a method/class that does not exist in the other version's compiler.
+   */
+  private fun ExtensionStorage.registerExtensionCompat(descriptor: Any, extension: Any) {
+    val method = javaClass.methods.first { it.name == "registerExtension" && it.parameterCount == 2 }
+    method.invoke(this, descriptor, extension)
   }
 }
