@@ -4,12 +4,25 @@ import com.vanniktech.maven.publish.DeploymentValidation
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
 
 @Suppress("unused")
 class PublishConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     with(target) {
       pluginManager.apply("com.vanniktech.maven.publish")
+
+      // Publish resolved dependency versions so version-matrix testing (e.g. -DkotlinVersion)
+      // produces metadata that matches the substituted Kotlin version. Without this the POM
+      // would always declare the default Kotlin version, leaking it into functional-test builds.
+      extensions.configure(PublishingExtension::class.java) { publishing ->
+        publishing.publications.withType(MavenPublication::class.java).configureEach { publication ->
+          publication.versionMapping { mapping ->
+            mapping.allVariants { strategy -> strategy.fromResolutionResult() }
+          }
+        }
+      }
 
       extensions.configure(MavenPublishBaseExtension::class.java) { publishing ->
         publishing.publishToMavenCentral(true, DeploymentValidation.VALIDATED)

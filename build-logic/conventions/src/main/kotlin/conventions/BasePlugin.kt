@@ -27,6 +27,29 @@ class BasePlugin : Plugin<Project> {
     val jvmTarget = libs.findVersion("jvmTarget").get().toString()
     val jdkLanguage = JavaLanguageVersion.of(libs.findVersion("jdk").get().toString().toInt())
 
+    // Tracks the Kotlin Gradle Plugin version, which determines the compile language version.
+    // Several opt-in flags below became the default in 2.4 and are redundant (and fail under
+    // allWarningsAsErrors) at that language version, so they are only added for older versions.
+    val defaultKotlinVersion = libs.findVersion("kotlin").get().toString()
+    val effectiveKotlinVersion = System.getProperty("kotlinVersion") ?: defaultKotlinVersion
+    val kotlinVersionParts = effectiveKotlinVersion.split("-")[0].split(".").map { it.toIntOrNull() ?: 0 }
+    val isAtLeastKotlin240 =
+      kotlinVersionParts[0] > 2 || (kotlinVersionParts[0] == 2 && kotlinVersionParts[1] >= 4)
+
+    // When testing against a non-default Kotlin version, substitute all org.jetbrains.kotlin
+    // dependencies so every module (compiler plugin, Gradle plugin, published metadata) compiles
+    // and resolves against the same Kotlin API level. This keeps the Kotlin Gradle Plugin pulled
+    // into functional-test builds aligned with the version the compiler plugin was built against.
+    if (effectiveKotlinVersion != defaultKotlinVersion) {
+      configurations.configureEach { configuration ->
+        configuration.resolutionStrategy.eachDependency { details ->
+          if (details.requested.group == "org.jetbrains.kotlin") {
+            details.useVersion(effectiveKotlinVersion)
+          }
+        }
+      }
+    }
+
     extensions.configure(JavaPluginExtension::class.java) { java ->
       java.toolchain.languageVersion.set(jdkLanguage)
     }
@@ -39,7 +62,11 @@ class BasePlugin : Plugin<Project> {
       task.compilerOptions { options ->
         options.allWarningsAsErrors.set(true)
         options.jvmTarget.set(JvmTarget.fromTarget(jvmTarget))
-        options.freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        // Applying annotations to both the value parameter and property is the default as of
+        // language version 2.4, where this flag is redundant; only opt in on older versions.
+        if (!isAtLeastKotlin240) {
+          options.freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        }
       }
     }
 

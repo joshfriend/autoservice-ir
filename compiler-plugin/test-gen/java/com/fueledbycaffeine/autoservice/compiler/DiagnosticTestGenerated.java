@@ -15,10 +15,14 @@ import java.util.regex.Pattern;
 @TestMetadata("compiler-plugin/testData/diagnostic")
 @TestDataPath("$PROJECT_ROOT")
 public class DiagnosticTestGenerated extends AbstractDiagnosticTest {
+  private void run(String fileName) {
+    runTest("compiler-plugin/testData/diagnostic/" + fileName);
+  }
+
   @Test
   @TestMetadata("AbstractClass.kt")
   public void testAbstractClass() {
-    runTest("compiler-plugin/testData/diagnostic/AbstractClass.kt");
+    run("AbstractClass.kt");
   }
 
   @Test
@@ -29,24 +33,24 @@ public class DiagnosticTestGenerated extends AbstractDiagnosticTest {
   @Test
   @TestMetadata("AmbiguousInterface.kt")
   public void testAmbiguousInterface() {
-    runTest("compiler-plugin/testData/diagnostic/AmbiguousInterface.kt");
+    run("AmbiguousInterface.kt");
   }
 
   @Test
   @TestMetadata("DoesNotImplement.kt")
   public void testDoesNotImplement() {
-    runTest("compiler-plugin/testData/diagnostic/DoesNotImplement.kt");
+    run("DoesNotImplement.kt");
   }
 
   @Test
   @TestMetadata("InterfaceAnnotated.kt")
   public void testInterfaceAnnotated() {
-    runTest("compiler-plugin/testData/diagnostic/InterfaceAnnotated.kt");
+    run("InterfaceAnnotated.kt");
   }
 
   @Test
   @TestMetadata("PrivateClass.kt")
   public void testPrivateClass() {
-    runTest("compiler-plugin/testData/diagnostic/PrivateClass.kt");
+    run("PrivateClass.kt");
   }
 }
