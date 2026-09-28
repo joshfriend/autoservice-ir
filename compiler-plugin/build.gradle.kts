@@ -49,7 +49,7 @@ kotlin {
 }
 
 // Configuration for AutoService runtime annotations during compilation tests
-val autoServiceRuntime by configurations.dependencyScope("autoServiceRuntime") { isTransitive = false }
+val autoServiceRuntime = configurations.dependencyScope("autoServiceRuntime") { isTransitive = false }
 
 val autoServiceRuntimeClasspath =
   configurations.resolvable("autoServiceRuntimeClasspath") {

@@ -48,8 +48,8 @@ dependencyAnalysis {
   }
 }
 
-val main by sourceSets.getting
-val functionalTest by sourceSets.getting {
+val main = sourceSets.getByName("main")
+sourceSets.named("functionalTest") {
   compileClasspath += main.output + configurations["testRuntimeClasspath"]
   runtimeClasspath += output + compileClasspath
 }
