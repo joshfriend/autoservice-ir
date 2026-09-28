@@ -6,7 +6,7 @@ pluginManagement {
     gradlePluginPortal()
   }
   plugins {
-    id("org.jetbrains.kotlin.jvm") version (System.getProperty("kotlinVersion") ?: "2.4.0")
+    id("org.jetbrains.kotlin.jvm") version (System.getProperty("kotlinVersion") ?: "2.4.20")
   }
 }
 

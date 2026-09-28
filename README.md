@@ -16,7 +16,7 @@ Add the AutoService Gradle plugin to your build configuration:
 **build.gradle(.kts):**
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.4.20"
     id("com.fueledbycaffeine.autoservice") version "<latest>"
 }
 ```
